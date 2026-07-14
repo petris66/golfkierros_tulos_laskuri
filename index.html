@@ -461,12 +461,28 @@
             recognition.maxAlternatives = 3;
 
             recognition.onstart = function() {
-                button.classList.add("listening");
-                button.textContent = "🎤 Kuuntelen…";
+    button.classList.add("listening");
+    button.textContent = "🎤 Kuuntelen…";
 
-                status.textContent =
-                    "Sano esimerkiksi: Reikä 1, Petri 5, Seppo 4.";
-            };
+    status.textContent =
+        "Sano esimerkiksi: Reikä 1, Petri 5, Seppo 4.";
+};
+
+recognition.onspeechstart = function() {
+    status.textContent = "🎤 Kuulen puhetta...";
+};
+
+recognition.onspeechend = function() {
+    status.textContent = "🔇 Puhe loppui...";
+};
+
+recognition.onaudiostart = function() {
+    console.log("Audio alkoi");
+};
+
+recognition.onaudioend = function() {
+    console.log("Audio loppui");
+};
 
             recognition.onresult = function(event) {
                 const alternatives = event.results[0];
@@ -515,10 +531,13 @@
                 status.textContent = message;
             };
 
-            recognition.onend = function() {
-                button.classList.remove("listening");
-                button.textContent = "🎤 Anna tulokset puheella";
-            };
+           recognition.onend = function() {
+
+    status.innerHTML += "<br>✅ onend tapahtui";
+
+    button.classList.remove("listening");
+    button.textContent = "🎤 Anna tulokset puheella";
+};
 
             recognition.start();
         }
