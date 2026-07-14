@@ -1,372 +1,531 @@
+
 <!DOCTYPE html>
 <html lang="fi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Golf-tuloslaskuri</title>
 
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 10px;
-            margin: 0;
-            font-size: 14px;
-            background-color: #f5f5f5;
+        :root {
+            --bg: #f3f5f2;
+            --card: #ffffff;
+            --border: #cfd5cf;
+            --soft: #e9eee8;
+            --strong: #dce5db;
+            --text: #1f2a22;
+            --danger: #fff0f0;
         }
 
-        h2 {
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 12px;
+            font-family: Arial, sans-serif;
+            color: var(--text);
+            background: var(--bg);
+        }
+
+        .app {
+            max-width: 760px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin: 4px 0 14px;
             text-align: center;
-            margin-top: 5px;
+            font-size: 24px;
+        }
+
+        .card {
+            margin-bottom: 12px;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--card);
+        }
+
+        .section-title {
+            margin: 0 0 10px;
+            font-size: 17px;
+        }
+
+        .player-count {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .player-count button,
+        .action-button {
+            min-height: 46px;
+            padding: 10px;
+            border: 1px solid #9da69e;
+            border-radius: 8px;
+            background: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .player-count button.active {
+            font-weight: bold;
+            background: var(--strong);
+            border-color: #6f7c70;
+        }
+
+        .next-hole-box {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .next-hole-label {
+            font-size: 15px;
+        }
+
+        .next-hole-number {
+            font-size: 34px;
+            font-weight: bold;
+        }
+
+        #voiceButton {
+            width: 100%;
+            min-height: 54px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        #voiceButton.listening {
+            background: var(--danger);
+        }
+
+        #voiceStatus {
+            margin-top: 10px;
+            padding: 10px;
+            min-height: 46px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #fafafa;
+            line-height: 1.4;
+        }
+
+        .example {
+            margin-top: 8px;
+            font-size: 13px;
+            color: #4b554d;
+            line-height: 1.4;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            border-radius: 10px;
         }
 
         table {
             width: 100%;
+            min-width: 420px;
             border-collapse: collapse;
-            background-color: white;
+            background: white;
         }
 
         th,
         td {
-            border: 1px solid #ccc;
-            padding: 7px 3px;
+            border: 1px solid var(--border);
+            padding: 7px 4px;
             text-align: center;
         }
 
         th {
-            background-color: #e8e8e8;
+            background: var(--soft);
         }
 
-        .score-input {
-            width: 100%;
-            box-sizing: border-box;
-            border: none;
-            text-align: center;
-            font-size: 17px;
-            padding: 5px 0;
-            background: transparent;
-        }
-
-        .score-input:focus {
-            outline: 2px solid #777;
-            background-color: #fff;
+        .hole-cell {
+            width: 54px;
+            font-weight: bold;
         }
 
         .player-name {
             width: 100%;
-            box-sizing: border-box;
-            border: 1px solid #aaa;
-            border-radius: 4px;
+            min-width: 66px;
+            padding: 7px 4px;
+            border: 1px solid #aeb6ae;
+            border-radius: 6px;
             text-align: center;
             font-size: 14px;
             font-weight: bold;
-            padding: 6px 2px;
-            background-color: white;
+            background: white;
+        }
+
+        .score-input {
+            width: 100%;
+            min-width: 54px;
+            padding: 7px 0;
+            border: none;
+            text-align: center;
+            font-size: 18px;
+            background: transparent;
+        }
+
+        .score-input:focus {
+            outline: 2px solid #7a877b;
+            background: white;
         }
 
         .subtotal {
             font-weight: bold;
-            background-color: #eeeeee;
+            background: #eef1ed;
         }
 
         .total {
             font-weight: bold;
-            background-color: #dddddd;
             font-size: 16px;
+            background: #dde3dc;
         }
 
-        button {
-            width: 100%;
-            margin: 10px 0;
-            padding: 13px;
-            font-size: 16px;
-            cursor: pointer;
-            border: 1px solid #999;
-            border-radius: 6px;
-            background-color: white;
+        .actions {
+            display: grid;
+            gap: 8px;
+            margin-top: 12px;
         }
 
-        #voiceButton {
-            font-weight: bold;
-            font-size: 18px;
-        }
-
-        #voiceButton.listening {
-            background-color: #ffd7d7;
-        }
-
-        #voiceStatus {
-            padding: 10px;
-            margin: 8px 0;
-            min-height: 22px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            background-color: white;
-        }
-
-        .example {
+        .muted {
+            color: #59625b;
             font-size: 13px;
-            line-height: 1.4;
-            color: #444;
-            margin-bottom: 10px;
+        }
+
+        .hidden-player {
+            display: none;
+        }
+
+        @media (max-width: 500px) {
+            body {
+                padding: 8px;
+            }
+
+            h1 {
+                font-size: 21px;
+            }
+
+            th,
+            td {
+                padding: 6px 2px;
+            }
+
+            .player-name {
+                font-size: 13px;
+            }
         }
     </style>
 </head>
 
 <body>
+    <main class="app">
+        <h1>Golf-tuloslaskuri</h1>
 
-    <h2>Golf-tuloslaskuri</h2>
+        <section class="card">
+            <h2 class="section-title">Pelaajien määrä</h2>
 
-    <button type="button" id="voiceButton" onclick="startVoiceInput()">
-        🎤 Anna tulokset puheella
-    </button>
+            <div class="player-count" id="playerCountButtons">
+                <button type="button" data-count="1">1</button>
+                <button type="button" data-count="2">2</button>
+                <button type="button" data-count="3">3</button>
+                <button type="button" data-count="4">4</button>
+            </div>
+        </section>
 
-    <div id="voiceStatus">
-        Paina mikrofonipainiketta ja sano tulokset.
-    </div>
+        <section class="card next-hole-box">
+            <div>
+                <div class="next-hole-label">Seuraava reikä</div>
+                <div class="muted">Reikä vaihtuu onnistuneen kirjauksen jälkeen.</div>
+            </div>
 
-    <div class="example">
-        Esimerkki:<br>
-        <strong>Reikä 1, Petri 5, Seppo 4, Matti 6, Jari 5</strong>
-    </div>
+            <div class="next-hole-number" id="nextHole">1</div>
+        </section>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Reikä</th>
+        <section class="card">
+            <button
+                type="button"
+                class="action-button"
+                id="voiceButton"
+                onclick="startVoiceInput()"
+            >
+                🎤 Anna tulokset puheella
+            </button>
 
-                <th>
-                    <input
-                        type="text"
-                        class="player-name"
-                        id="name1"
-                        value="P1"
-                        maxlength="12"
-                    >
-                </th>
+            <div id="voiceStatus">
+                Paina mikrofonipainiketta ja sano tulokset.
+            </div>
 
-                <th>
-                    <input
-                        type="text"
-                        class="player-name"
-                        id="name2"
-                        value="P2"
-                        maxlength="12"
-                    >
-                </th>
+            <div class="example" id="voiceExample">
+                Esimerkki yhdellä pelaajalla: <strong>yks viis</strong>
+            </div>
+        </section>
 
-                <th>
-                    <input
-                        type="text"
-                        class="player-name"
-                        id="name3"
-                        value="P3"
-                        maxlength="12"
-                    >
-                </th>
+        <section class="table-wrap">
+            <table>
+                <thead>
+                    <tr id="headerRow">
+                        <th class="hole-cell">Reikä</th>
+                        <th class="player-column" data-player="1">
+                            <input
+                                type="text"
+                                class="player-name"
+                                id="name1"
+                                value="P1"
+                                maxlength="12"
+                                aria-label="Pelaajan 1 nimi"
+                            >
+                        </th>
+                        <th class="player-column" data-player="2">
+                            <input
+                                type="text"
+                                class="player-name"
+                                id="name2"
+                                value="P2"
+                                maxlength="12"
+                                aria-label="Pelaajan 2 nimi"
+                            >
+                        </th>
+                        <th class="player-column" data-player="3">
+                            <input
+                                type="text"
+                                class="player-name"
+                                id="name3"
+                                value="P3"
+                                maxlength="12"
+                                aria-label="Pelaajan 3 nimi"
+                            >
+                        </th>
+                        <th class="player-column" data-player="4">
+                            <input
+                                type="text"
+                                class="player-name"
+                                id="name4"
+                                value="P4"
+                                maxlength="12"
+                                aria-label="Pelaajan 4 nimi"
+                            >
+                        </th>
+                    </tr>
+                </thead>
 
-                <th>
-                    <input
-                        type="text"
-                        class="player-name"
-                        id="name4"
-                        value="P4"
-                        maxlength="12"
-                    >
-                </th>
-            </tr>
-        </thead>
+                <tbody id="tableBody"></tbody>
 
-        <tbody id="table-body"></tbody>
+                <tfoot>
+                    <tr class="total">
+                        <td>Yhteensä</td>
+                        <td class="player-column" data-player="1" id="sum1">0</td>
+                        <td class="player-column" data-player="2" id="sum2">0</td>
+                        <td class="player-column" data-player="3" id="sum3">0</td>
+                        <td class="player-column" data-player="4" id="sum4">0</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </section>
 
-        <tfoot>
-            <tr class="total">
-                <td>Yhteensä</td>
-                <td id="sum1">0</td>
-                <td id="sum2">0</td>
-                <td id="sum3">0</td>
-                <td id="sum4">0</td>
-            </tr>
-        </tfoot>
-    </table>
-
-    <button type="button" onclick="resetScores()">
-        Tyhjennä tulokset
-    </button>
+        <div class="actions">
+            <button type="button" class="action-button" onclick="resetRound()">
+                Aloita uusi kierros
+            </button>
+        </div>
+    </main>
 
     <script>
-        const tbody = document.getElementById("table-body");
+        "use strict";
 
-        for (let hole = 1; hole <= 18; hole++) {
-            const row = document.createElement("tr");
+        const STORAGE_KEY = "golfTuloslaskuriV2";
+        const MAX_PLAYERS = 4;
 
-            row.innerHTML = `
-                <td>${hole}</td>
+        let playerCount = 1;
+        let nextHole = 1;
 
-                <td>
-                    <input
-                        type="number"
-                        min="1"
-                        max="20"
-                        inputmode="numeric"
-                        class="score-input p1"
-                        data-hole="${hole}"
-                    >
-                </td>
+        const tableBody = document.getElementById("tableBody");
+        const voiceStatus = document.getElementById("voiceStatus");
+        const voiceButton = document.getElementById("voiceButton");
+        const nextHoleElement = document.getElementById("nextHole");
+        const voiceExample = document.getElementById("voiceExample");
 
-                <td>
-                    <input
-                        type="number"
-                        min="1"
-                        max="20"
-                        inputmode="numeric"
-                        class="score-input p2"
-                        data-hole="${hole}"
-                    >
-                </td>
+        function buildScoreTable() {
+            tableBody.innerHTML = "";
 
-                <td>
-                    <input
-                        type="number"
-                        min="1"
-                        max="20"
-                        inputmode="numeric"
-                        class="score-input p3"
-                        data-hole="${hole}"
-                    >
-                </td>
+            for (let hole = 1; hole <= 18; hole++) {
+                const row = document.createElement("tr");
 
-                <td>
-                    <input
-                        type="number"
-                        min="1"
-                        max="20"
-                        inputmode="numeric"
-                        class="score-input p4"
-                        data-hole="${hole}"
-                    >
-                </td>
-            `;
-
-            tbody.appendChild(row);
-
-            if (hole === 9) {
-                const frontNineRow = document.createElement("tr");
-                frontNineRow.className = "subtotal";
-
-                frontNineRow.innerHTML = `
-                    <td>Etuysi</td>
-                    <td id="front1">0</td>
-                    <td id="front2">0</td>
-                    <td id="front3">0</td>
-                    <td id="front4">0</td>
+                row.innerHTML = `
+                    <td class="hole-cell">${hole}</td>
+                    ${buildPlayerCells(hole)}
                 `;
 
-                tbody.appendChild(frontNineRow);
+                tableBody.appendChild(row);
+
+                if (hole === 9) {
+                    tableBody.appendChild(buildSubtotalRow("Etuysi", "front"));
+                }
+
+                if (hole === 18) {
+                    tableBody.appendChild(buildSubtotalRow("Takaysi", "back"));
+                }
             }
 
-            if (hole === 18) {
-                const backNineRow = document.createElement("tr");
-                backNineRow.className = "subtotal";
-
-                backNineRow.innerHTML = `
-                    <td>Takaysi</td>
-                    <td id="back1">0</td>
-                    <td id="back2">0</td>
-                    <td id="back3">0</td>
-                    <td id="back4">0</td>
-                `;
-
-                tbody.appendChild(backNineRow);
-            }
+            document.querySelectorAll(".score-input").forEach(input => {
+                input.addEventListener("input", () => {
+                    calculateScores();
+                    saveState();
+                });
+            });
         }
 
-        document.querySelectorAll(".score-input").forEach(input => {
-            input.addEventListener("input", calculateScores);
-        });
+        function buildPlayerCells(hole) {
+            let html = "";
+
+            for (let player = 1; player <= MAX_PLAYERS; player++) {
+                html += `
+                    <td class="player-column" data-player="${player}">
+                        <input
+                            type="number"
+                            min="1"
+                            max="20"
+                            inputmode="numeric"
+                            class="score-input p${player}"
+                            data-hole="${hole}"
+                            aria-label="Pelaaja ${player}, reikä ${hole}"
+                        >
+                    </td>
+                `;
+            }
+
+            return html;
+        }
+
+        function buildSubtotalRow(label, prefix) {
+            const row = document.createElement("tr");
+            row.className = "subtotal";
+
+            let cells = `<td>${label}</td>`;
+
+            for (let player = 1; player <= MAX_PLAYERS; player++) {
+                cells += `
+                    <td
+                        class="player-column"
+                        data-player="${player}"
+                        id="${prefix}${player}"
+                    >
+                        0
+                    </td>
+                `;
+            }
+
+            row.innerHTML = cells;
+            return row;
+        }
+
+        function setPlayerCount(count) {
+            playerCount = Math.min(Math.max(Number(count) || 1, 1), MAX_PLAYERS);
+
+            document.querySelectorAll("#playerCountButtons button").forEach(button => {
+                button.classList.toggle(
+                    "active",
+                    Number(button.dataset.count) === playerCount
+                );
+            });
+
+            document.querySelectorAll(".player-column").forEach(column => {
+                const player = Number(column.dataset.player);
+                column.classList.toggle("hidden-player", player > playerCount);
+            });
+
+            updateVoiceExample();
+            calculateScores();
+            saveState();
+        }
+
+        function updateVoiceExample() {
+            const examples = {
+                1: "Esimerkki: <strong>yks viis</strong>",
+                2: "Esimerkki: <strong>yks viis neljä</strong>",
+                3: "Esimerkki: <strong>yks viis neljä kuus</strong>",
+                4: "Esimerkki: <strong>yks viis neljä kuus viis</strong>"
+            };
+
+            voiceExample.innerHTML = examples[playerCount];
+        }
 
         function calculateScores() {
-            for (let player = 1; player <= 4; player++) {
-                let frontNine = 0;
-                let backNine = 0;
+            for (let player = 1; player <= MAX_PLAYERS; player++) {
+                let front = 0;
+                let back = 0;
 
-                document.querySelectorAll(".p" + player).forEach(input => {
+                document.querySelectorAll(`.p${player}`).forEach(input => {
                     const score = Number(input.value) || 0;
                     const hole = Number(input.dataset.hole);
 
                     if (hole <= 9) {
-                        frontNine += score;
+                        front += score;
                     } else {
-                        backNine += score;
+                        back += score;
                     }
                 });
 
-                document.getElementById("front" + player).textContent = frontNine;
-                document.getElementById("back" + player).textContent = backNine;
-                document.getElementById("sum" + player).textContent =
-                    frontNine + backNine;
+                document.getElementById(`front${player}`).textContent = front;
+                document.getElementById(`back${player}`).textContent = back;
+                document.getElementById(`sum${player}`).textContent = front + back;
             }
         }
 
         function normalizeText(text) {
             return text
                 .toLowerCase()
-                .replace(/[.,:;]/g, " ")
+                .replace(/[.,:;!?]/g, " ")
                 .replace(/\s+/g, " ")
                 .trim();
         }
 
         function wordToNumber(value) {
-           const numbers = {
-    "yksi": 1,
-    "yks": 1,
+            const numbers = {
+                "yksi": 1,
+                "yks": 1,
+                "kaksi": 2,
+                "kaks": 2,
+                "kolme": 3,
+                "kolm": 3,
+                "neljä": 4,
+                "nelja": 4,
+                "nelkku": 4,
+                "viisi": 5,
+                "viis": 5,
+                "kuusi": 6,
+                "kuus": 6,
+                "seitsemän": 7,
+                "seitseman": 7,
+                "seiska": 7,
+                "kahdeksan": 8,
+                "kahdeks": 8,
+                "kasi": 8,
+                "yhdeksän": 9,
+                "yhdeksan": 9,
+                "ysi": 9,
+                "kymmenen": 10,
+                "kymppi": 10,
+                "yksitoista": 11,
+                "kaksitoista": 12,
+                "kolmetoista": 13,
+                "neljätoista": 14,
+                "neljatoista": 14,
+                "viisitoista": 15,
+                "kuusitoista": 16,
+                "seitsemäntoista": 17,
+                "seitsemantoista": 17,
+                "kahdeksantoista": 18,
+                "yhdeksäntoista": 19,
+                "yhdeksantoista": 19,
+                "kaksikymmentä": 20,
+                "kaksikymmenta": 20
+            };
 
-    "kaksi": 2,
-    "kaks": 2,
-
-    "kolme": 3,
-    "kolm": 3,
-
-    "neljä": 4,
-    "nelja": 4,
-    "nelkku": 4,
-
-    "viisi": 5,
-    "viis": 5,
-
-    "kuusi": 6,
-    "kuus": 6,
-
-    "seitsemän": 7,
-    "seitseman": 7,
-    "seiska": 7,
-
-    "kahdeksan": 8,
-    "kahdeks": 8,
-    "kasi": 8,
-
-    "yhdeksän": 9,
-    "yhdeksan": 9,
-    "ysi": 9,
-
-    "kymmenen": 10,
-    "kymppi": 10,
-
-    "yksitoista": 11,
-    "kaksitoista": 12,
-    "kolmetoista": 13,
-    "neljätoista": 14,
-    "neljatoista": 14,
-    "viisitoista": 15,
-    "kuusitoista": 16,
-    "seitsemäntoista": 17,
-    "seitsemantoista": 17,
-    "kahdeksantoista": 18,
-    "yhdeksäntoista": 19,
-    "yhdeksantoista": 19,
-    "kaksikymmentä": 20,
-    "kaksikymmenta": 20
-};
             if (/^\d+$/.test(value)) {
                 return Number(value);
             }
@@ -374,101 +533,90 @@
             return numbers[value] ?? null;
         }
 
-        function getPlayerNames() {
-            const players = [];
+        function extractNumbers(spokenText) {
+            const words = normalizeText(spokenText).split(" ");
+            const numbers = [];
 
-            for (let player = 1; player <= 4; player++) {
-                const name = document
-                    .getElementById("name" + player)
-                    .value
-                    .trim()
-                    .toLowerCase();
+            words.forEach(word => {
+                const number = wordToNumber(word);
 
-                if (name) {
-                    players.push({
-                        playerNumber: player,
-                        name: name
-                    });
+                if (number !== null) {
+                    numbers.push(number);
                 }
-            }
+            });
 
-            players.sort((a, b) => b.name.length - a.name.length);
-
-            return players;
+            return numbers;
         }
 
         function parseVoiceResults(spokenText) {
-    const text = normalizeText(spokenText);
-    const words = text.split(" ");
+            const numbers = extractNumbers(spokenText);
 
-    const recognizedNumbers = [];
+            if (numbers.length === 0) {
+                throw new Error("Numeroita ei tunnistettu.");
+            }
 
-    words.forEach(word => {
-        const number = wordToNumber(word);
+            const expectedWithHole = playerCount + 1;
+            const expectedWithoutHole = playerCount;
 
-        if (number !== null) {
-            recognizedNumbers.push(number);
-        }
-    });
+            let hole;
+            let scores;
 
-    /*
-        Hyväksytyt puhemuodot:
-
-        "Yks viis neljä kuus viis"
-        "Reikä yks viis neljä kuus viis"
-        "1 5 4 6 5"
-
-        Ensimmäinen numero = reikä
-        Seuraavat numerot = pelaajien tulokset
-    */
-
-    if (recognizedNumbers.length < 2) {
-        throw new Error("Reikää ja tuloksia ei tunnistettu.");
-    }
-
-    const hole = recognizedNumbers[0];
-
-    if (hole < 1 || hole > 18) {
-        throw new Error("Reiän numeron pitää olla 1–18.");
-    }
-
-    const scores = recognizedNumbers.slice(1, 5);
-
-    if (scores.length === 0) {
-        throw new Error("Pelaajien tuloksia ei tunnistettu.");
-    }
-
-    const addedScores = [];
-
-    scores.forEach((score, index) => {
-        const player = index + 1;
-
-        if (score < 1 || score > 20) {
-            return;
-        }
-
-        const input = document.querySelector(
-            `.p${player}[data-hole="${hole}"]`
-        );
-
-        if (input) {
-            input.value = score;
-
-            const playerName =
-                document.getElementById("name" + player).value.trim() ||
-                "P" + player;
-
-            addedScores.push(`${playerName}: ${score}`);
-        }
-    });
-
-                if (addedScores.length === 0) {
+            if (numbers.length === expectedWithHole) {
+                hole = numbers[0];
+                scores = numbers.slice(1);
+            } else if (numbers.length === expectedWithoutHole) {
+                hole = nextHole;
+                scores = numbers;
+            } else if (numbers.length < expectedWithoutHole) {
+                throw new Error("Tuloksia puuttuu.");
+            } else if (numbers.length > expectedWithHole) {
+                throw new Error("Liikaa numeroita.");
+            } else {
                 throw new Error(
-                    "Pelaajien nimiä ja tuloksia ei tunnistettu."
+                    `Sano ${playerCount} tulosta tai reiän numero ja ${playerCount} tulosta.`
                 );
             }
 
+            if (hole < 1 || hole > 18) {
+                throw new Error("Reiän numeron pitää olla 1–18.");
+            }
+
+            if (scores.length !== playerCount) {
+                throw new Error("Tulosten määrä ei vastaa pelaajien määrää.");
+            }
+
+            scores.forEach(score => {
+                if (score < 1 || score > 20) {
+                    throw new Error("Tuloksen pitää olla 1–20.");
+                }
+            });
+
+            const addedScores = [];
+
+            scores.forEach((score, index) => {
+                const player = index + 1;
+                const input = document.querySelector(
+                    `.p${player}[data-hole="${hole}"]`
+                );
+
+                if (!input) {
+                    return;
+                }
+
+                input.value = score;
+
+                const playerName =
+                    document.getElementById(`name${player}`).value.trim() ||
+                    `P${player}`;
+
+                addedScores.push(`${playerName}: ${score}`);
+            });
+
             calculateScores();
+
+            nextHole = hole < 18 ? hole + 1 : 18;
+            updateNextHole();
+            saveState();
 
             return {
                 hole,
@@ -481,13 +629,9 @@
                 window.SpeechRecognition ||
                 window.webkitSpeechRecognition;
 
-            const button = document.getElementById("voiceButton");
-            const status = document.getElementById("voiceStatus");
-
             if (!SpeechRecognition) {
-                status.textContent =
-                    "Tämä selain ei tue puheentunnistusta. Avaa sivu iPhonen Safarissa.";
-
+                voiceStatus.textContent =
+                    "Tämä selain ei tue puheentunnistusta.";
                 return;
             }
 
@@ -496,45 +640,29 @@
             recognition.lang = "fi-FI";
             recognition.continuous = false;
             recognition.interimResults = false;
-            recognition.maxAlternatives = 3;
+            recognition.maxAlternatives = 5;
 
             recognition.onstart = function() {
-    button.classList.add("listening");
-    button.textContent = "🎤 Kuuntelen…";
+                voiceButton.classList.add("listening");
+                voiceButton.textContent = "🎤 Kuuntelen…";
+                voiceStatus.textContent = "Sano reiän numero ja tulokset.";
+            };
 
-    status.textContent =
-        "Sano esimerkiksi: Reikä 1, Petri 5, Seppo 4.";
-};
-
-recognition.onspeechstart = function() {
-    status.textContent = "🎤 Kuulen puhetta...";
-};
-
-recognition.onspeechend = function() {
-    status.textContent = "🔇 Puhe loppui...";
-};
-
-recognition.onaudiostart = function() {
-    console.log("Audio alkoi");
-};
-
-recognition.onaudioend = function() {
-    console.log("Audio loppui");
-};
+            recognition.onspeechstart = function() {
+                voiceStatus.textContent = "🎤 Kuulen puhetta…";
+            };
 
             recognition.onresult = function(event) {
                 const alternatives = event.results[0];
-
                 let successfulResult = null;
-                let lastError = null;
                 let heardText = alternatives[0].transcript;
+                let lastError = new Error("Puhetta ei voitu käsitellä.");
 
                 for (let i = 0; i < alternatives.length; i++) {
                     try {
                         successfulResult = parseVoiceResults(
                             alternatives[i].transcript
                         );
-
                         heardText = alternatives[i].transcript;
                         break;
                     } catch (error) {
@@ -543,46 +671,140 @@ recognition.onaudioend = function() {
                 }
 
                 if (successfulResult) {
-                    status.innerHTML =
-                        `<strong>Kuulin:</strong> ${heardText}<br>` +
-                        `<strong>Reikä ${successfulResult.hole}:</strong> ` +
+                    voiceStatus.innerHTML =
+                        `<strong>Reikä ${successfulResult.hole} tallennettu ✅</strong><br>` +
                         successfulResult.addedScores.join(", ");
+
+                    speakConfirmation(successfulResult.hole);
                 } else {
-                    status.innerHTML =
-                        `<strong>Kuulin:</strong> ${heardText}<br>` +
-                        `<strong>Virhe:</strong> ${lastError.message}`;
+                    voiceStatus.innerHTML =
+                        `<strong>Kuulin:</strong> ${escapeHtml(heardText)}<br>` +
+                        `<strong>Virhe:</strong> ${escapeHtml(lastError.message)}`;
+
+                    speakMessage(lastError.message);
                 }
             };
 
             recognition.onerror = function(event) {
-                let message = "Puheentunnistus epäonnistui.";
+                const messages = {
+                    "no-speech": "Puhetta ei kuulunut.",
+                    "not-allowed": "Mikrofonin käyttöä ei sallittu.",
+                    "audio-capture": "Mikrofonia ei löytynyt.",
+                    "network": "Puheentunnistuksen verkkovirhe."
+                };
 
-                if (event.error === "not-allowed") {
-                    message =
-                        "Mikrofonin tai puheentunnistuksen käyttöä ei sallittu.";
-                }
+                const message =
+                    messages[event.error] || "Puheentunnistus epäonnistui.";
 
-                if (event.error === "no-speech") {
-                    message = "Puhetta ei kuulunut. Yritä uudelleen.";
-                }
-
-                status.textContent = message;
+                voiceStatus.textContent = message;
+                speakMessage(message);
             };
 
-           recognition.onend = function() {
-
-    status.innerHTML += "<br>✅ onend tapahtui";
-
-    button.classList.remove("listening");
-    button.textContent = "🎤 Anna tulokset puheella";
-};
+            recognition.onend = function() {
+                voiceButton.classList.remove("listening");
+                voiceButton.textContent = "🎤 Anna tulokset puheella";
+            };
 
             recognition.start();
         }
 
-        function resetScores() {
+        function speakConfirmation(hole) {
+            speakMessage(`Reikä ${hole} tallennettu`);
+        }
+
+        function speakMessage(text) {
+            if (!("speechSynthesis" in window)) {
+                return;
+            }
+
+            window.speechSynthesis.cancel();
+
+            const message = new SpeechSynthesisUtterance(text);
+            message.lang = "fi-FI";
+            message.rate = 0.9;
+            message.volume = 1;
+
+            window.speechSynthesis.speak(message);
+        }
+
+        function updateNextHole() {
+            nextHoleElement.textContent = nextHole;
+        }
+
+        function escapeHtml(text) {
+            return String(text)
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#039;");
+        }
+
+        function saveState() {
+            const state = {
+                playerCount,
+                nextHole,
+                names: [],
+                scores: {}
+            };
+
+            for (let player = 1; player <= MAX_PLAYERS; player++) {
+                state.names.push(
+                    document.getElementById(`name${player}`).value
+                );
+
+                state.scores[player] = [];
+
+                document.querySelectorAll(`.p${player}`).forEach(input => {
+                    state.scores[player].push(input.value);
+                });
+            }
+
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        }
+
+        function loadState() {
+            const raw = localStorage.getItem(STORAGE_KEY);
+
+            if (!raw) {
+                setPlayerCount(1);
+                updateNextHole();
+                return;
+            }
+
+            try {
+                const state = JSON.parse(raw);
+
+                playerCount = Number(state.playerCount) || 1;
+                nextHole = Number(state.nextHole) || 1;
+
+                for (let player = 1; player <= MAX_PLAYERS; player++) {
+                    const name = state.names?.[player - 1];
+
+                    if (typeof name === "string") {
+                        document.getElementById(`name${player}`).value = name;
+                    }
+
+                    const scores = state.scores?.[player] || [];
+
+                    document.querySelectorAll(`.p${player}`).forEach((input, index) => {
+                        input.value = scores[index] || "";
+                    });
+                }
+
+                setPlayerCount(playerCount);
+                updateNextHole();
+                calculateScores();
+            } catch (error) {
+                localStorage.removeItem(STORAGE_KEY);
+                setPlayerCount(1);
+                updateNextHole();
+            }
+        }
+
+        function resetRound() {
             const confirmed = confirm(
-                "Haluatko varmasti tyhjentää kaikki tulokset?"
+                "Haluatko varmasti aloittaa uuden kierroksen? Kaikki tulokset poistetaan."
             );
 
             if (!confirmed) {
@@ -593,12 +815,27 @@ recognition.onaudioend = function() {
                 input.value = "";
             });
 
+            nextHole = 1;
+            updateNextHole();
             calculateScores();
+            saveState();
 
-            document.getElementById("voiceStatus").textContent =
-                "Tulokset tyhjennettiin.";
+            voiceStatus.textContent = "Uusi kierros aloitettu.";
+            speakMessage("Uusi kierros aloitettu");
         }
-    </script>
 
+        document.querySelectorAll("#playerCountButtons button").forEach(button => {
+            button.addEventListener("click", () => {
+                setPlayerCount(Number(button.dataset.count));
+            });
+        });
+
+        document.querySelectorAll(".player-name").forEach(input => {
+            input.addEventListener("input", saveState);
+        });
+
+        buildScoreTable();
+        loadState();
+    </script>
 </body>
 </html>
