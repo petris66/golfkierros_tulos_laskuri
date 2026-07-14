@@ -77,7 +77,7 @@
 
         button {
             width: 100%;
-            margin: 18px 0 8px;
+            margin: 10px 0;
             padding: 13px;
             font-size: 16px;
             cursor: pointer;
@@ -85,12 +85,50 @@
             border-radius: 6px;
             background-color: white;
         }
+
+        #voiceButton {
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        #voiceButton.listening {
+            background-color: #ffd7d7;
+        }
+
+        #voiceStatus {
+            padding: 10px;
+            margin: 8px 0;
+            min-height: 22px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            background-color: white;
+        }
+
+        .example {
+            font-size: 13px;
+            line-height: 1.4;
+            color: #444;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 
 <body>
 
     <h2>Golf-tuloslaskuri</h2>
+
+    <button type="button" id="voiceButton" onclick="startVoiceInput()">
+        🎤 Anna tulokset puheella
+    </button>
+
+    <div id="voiceStatus">
+        Paina mikrofonipainiketta ja sano tulokset.
+    </div>
+
+    <div class="example">
+        Esimerkki:<br>
+        <strong>Reikä 1, Petri 5, Seppo 4, Matti 6, Jari 5</strong>
+    </div>
 
     <table>
         <thead>
@@ -173,7 +211,6 @@
                         inputmode="numeric"
                         class="score-input p1"
                         data-hole="${hole}"
-                        aria-label="Pelaaja 1, reikä ${hole}"
                     >
                 </td>
 
@@ -185,7 +222,6 @@
                         inputmode="numeric"
                         class="score-input p2"
                         data-hole="${hole}"
-                        aria-label="Pelaaja 2, reikä ${hole}"
                     >
                 </td>
 
@@ -197,7 +233,6 @@
                         inputmode="numeric"
                         class="score-input p3"
                         data-hole="${hole}"
-                        aria-label="Pelaaja 3, reikä ${hole}"
                     >
                 </td>
 
@@ -209,7 +244,6 @@
                         inputmode="numeric"
                         class="score-input p4"
                         data-hole="${hole}"
-                        aria-label="Pelaaja 4, reikä ${hole}"
                     >
                 </td>
             `;
@@ -274,6 +308,221 @@
             }
         }
 
+        function normalizeText(text) {
+            return text
+                .toLowerCase()
+                .replace(/[.,:;]/g, " ")
+                .replace(/\s+/g, " ")
+                .trim();
+        }
+
+        function wordToNumber(value) {
+            const numbers = {
+                "yksi": 1,
+                "kaksi": 2,
+                "kolme": 3,
+                "neljä": 4,
+                "viisi": 5,
+                "kuusi": 6,
+                "seitsemän": 7,
+                "kahdeksan": 8,
+                "yhdeksän": 9,
+                "kymmenen": 10,
+                "yksitoista": 11,
+                "kaksitoista": 12,
+                "kolmetoista": 13,
+                "neljätoista": 14,
+                "viisitoista": 15,
+                "kuusitoista": 16,
+                "seitsemäntoista": 17,
+                "kahdeksantoista": 18,
+                "yhdeksäntoista": 19,
+                "kaksikymmentä": 20
+            };
+
+            if (/^\d+$/.test(value)) {
+                return Number(value);
+            }
+
+            return numbers[value] ?? null;
+        }
+
+        function getPlayerNames() {
+            const players = [];
+
+            for (let player = 1; player <= 4; player++) {
+                const name = document
+                    .getElementById("name" + player)
+                    .value
+                    .trim()
+                    .toLowerCase();
+
+                if (name) {
+                    players.push({
+                        playerNumber: player,
+                        name: name
+                    });
+                }
+            }
+
+            players.sort((a, b) => b.name.length - a.name.length);
+
+            return players;
+        }
+
+        function parseVoiceResults(spokenText) {
+            const text = normalizeText(spokenText);
+            const words = text.split(" ");
+            const players = getPlayerNames();
+
+            let hole = null;
+
+            const holeWordIndex = words.findIndex(word =>
+                word === "reikä" ||
+                word === "reika" ||
+                word === "väylä" ||
+                word === "vayla"
+            );
+
+            if (holeWordIndex !== -1 && words[holeWordIndex + 1]) {
+                hole = wordToNumber(words[holeWordIndex + 1]);
+            }
+
+            if (!hole || hole < 1 || hole > 18) {
+                throw new Error("Reiän numeroa ei tunnistettu.");
+            }
+
+            let addedScores = [];
+
+            players.forEach(player => {
+                const nameWords = player.name.split(" ");
+
+                for (let i = 0; i < words.length; i++) {
+                    const possibleName = words
+                        .slice(i, i + nameWords.length)
+                        .join(" ");
+
+                    if (possibleName === player.name) {
+                        const scoreWord = words[i + nameWords.length];
+                        const score = wordToNumber(scoreWord);
+
+                        if (score !== null && score >= 1 && score <= 20) {
+                            const input = document.querySelector(
+                                `.p${player.playerNumber}[data-hole="${hole}"]`
+                            );
+
+                            if (input) {
+                                input.value = score;
+                                addedScores.push(
+                                    `${player.name}: ${score}`
+                                );
+                            }
+                        }
+
+                        break;
+                    }
+                }
+            });
+
+            if (addedScores.length === 0) {
+                throw new Error(
+                    "Pelaajien nimiä ja tuloksia ei tunnistettu."
+                );
+            }
+
+            calculateScores();
+
+            return {
+                hole,
+                addedScores
+            };
+        }
+
+        function startVoiceInput() {
+            const SpeechRecognition =
+                window.SpeechRecognition ||
+                window.webkitSpeechRecognition;
+
+            const button = document.getElementById("voiceButton");
+            const status = document.getElementById("voiceStatus");
+
+            if (!SpeechRecognition) {
+                status.textContent =
+                    "Tämä selain ei tue puheentunnistusta. Avaa sivu iPhonen Safarissa.";
+
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+
+            recognition.lang = "fi-FI";
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 3;
+
+            recognition.onstart = function() {
+                button.classList.add("listening");
+                button.textContent = "🎤 Kuuntelen…";
+
+                status.textContent =
+                    "Sano esimerkiksi: Reikä 1, Petri 5, Seppo 4.";
+            };
+
+            recognition.onresult = function(event) {
+                const alternatives = event.results[0];
+
+                let successfulResult = null;
+                let lastError = null;
+                let heardText = alternatives[0].transcript;
+
+                for (let i = 0; i < alternatives.length; i++) {
+                    try {
+                        successfulResult = parseVoiceResults(
+                            alternatives[i].transcript
+                        );
+
+                        heardText = alternatives[i].transcript;
+                        break;
+                    } catch (error) {
+                        lastError = error;
+                    }
+                }
+
+                if (successfulResult) {
+                    status.innerHTML =
+                        `<strong>Kuulin:</strong> ${heardText}<br>` +
+                        `<strong>Reikä ${successfulResult.hole}:</strong> ` +
+                        successfulResult.addedScores.join(", ");
+                } else {
+                    status.innerHTML =
+                        `<strong>Kuulin:</strong> ${heardText}<br>` +
+                        `<strong>Virhe:</strong> ${lastError.message}`;
+                }
+            };
+
+            recognition.onerror = function(event) {
+                let message = "Puheentunnistus epäonnistui.";
+
+                if (event.error === "not-allowed") {
+                    message =
+                        "Mikrofonin tai puheentunnistuksen käyttöä ei sallittu.";
+                }
+
+                if (event.error === "no-speech") {
+                    message = "Puhetta ei kuulunut. Yritä uudelleen.";
+                }
+
+                status.textContent = message;
+            };
+
+            recognition.onend = function() {
+                button.classList.remove("listening");
+                button.textContent = "🎤 Anna tulokset puheella";
+            };
+
+            recognition.start();
+        }
+
         function resetScores() {
             const confirmed = confirm(
                 "Haluatko varmasti tyhjentää kaikki tulokset?"
@@ -288,6 +537,9 @@
             });
 
             calculateScores();
+
+            document.getElementById("voiceStatus").textContent =
+                "Tulokset tyhjennettiin.";
         }
     </script>
 
