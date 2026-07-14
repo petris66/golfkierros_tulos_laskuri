@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Golf-laskuri</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 10px;
+            margin: 0;
+            font-size: 14px;
+            background-color: #f7f7f7;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+        }
+
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 8px 4px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #e8e8e8;
+        }
+
+        input {
+            width: 100%;
+            box-sizing: border-box;
+            border: none;
+            text-align: center;
+            font-size: 16px;
+            padding: 4px 0;
+            background: transparent;
+        }
+
+        input:focus {
+            outline: 2px solid #777;
+            background-color: #fff;
+        }
+
+        .total {
+            font-weight: bold;
+            background-color: #e8e8e8;
+        }
+
+        button {
+            width: 100%;
+            margin: 20px 0;
+            padding: 12px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>Golf-pistelaskuri</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Reikä</th>
+                <th>P1</th>
+                <th>P2</th>
+                <th>P3</th>
+                <th>P4</th>
+            </tr>
+        </thead>
+
+        <tbody id="table-body"></tbody>
+
+        <tfoot>
+            <tr class="total">
+                <td>Yhteensä</td>
+                <td id="sum1">0</td>
+                <td id="sum2">0</td>
+                <td id="sum3">0</td>
+                <td id="sum4">0</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <button type="button" onclick="resetAll()">
+        Tyhjennä kaikki
+    </button>
+
+    <script>
+        const tbody = document.getElementById("table-body");
+
+        for (let hole = 1; hole <= 18; hole++) {
+            const row = document.createElement("tr");
+
+            row.innerHTML = `
+                <td>${hole}</td>
+                <td>
+                    <input
+                        type="number"
+                        min="1"
+                        inputmode="numeric"
+                        class="p1"
+                        aria-label="Pelaaja 1, reikä ${hole}"
+                    >
+                </td>
+                <td>
+                    <input
+                        type="number"
+                        min="1"
+                        inputmode="numeric"
+                        class="p2"
+                        aria-label="Pelaaja 2, reikä ${hole}"
+                    >
+                </td>
+                <td>
+                    <input
+                        type="number"
+                        min="1"
+                        inputmode="numeric"
+                        class="p3"
+                        aria-label="Pelaaja 3, reikä ${hole}"
+                    >
+                </td>
+                <td>
+                    <input
+                        type="number"
+                        min="1"
+                        inputmode="numeric"
+                        class="p4"
+                        aria-label="Pelaaja 4, reikä ${hole}"
+                    >
+                </td>
+            `;
+
+            tbody.appendChild(row);
+        }
+
+        document.querySelectorAll("input").forEach(input => {
+            input.addEventListener("input", calculateTotals);
+        });
+
+        function calculateTotals() {
+            for (let player = 1; player <= 4; player++) {
+                let total = 0;
+
+                document.querySelectorAll(".p" + player).forEach(input => {
+                    total += Number(input.value) || 0;
+                });
+
+                document.getElementById("sum" + player).textContent = total;
+            }
+        }
+
+        function resetAll() {
+            const confirmed = confirm(
+                "Haluatko varmasti tyhjentää kaikki tulokset?"
+            );
+
+            if (!confirmed) {
+                return;
+            }
+
+            document.querySelectorAll("input").forEach(input => {
+                input.value = "";
+            });
+
+            calculateTotals();
+        }
+    </script>
+
+</body>
+</html>
