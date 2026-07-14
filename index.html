@@ -224,7 +224,7 @@
 
 <body>
     <main class="app">
-        <h1>Golf-tuloslaskuri</h1>
+        <h1>Golf-tuloslaskuri <span style="font-size:14px;font-weight:normal;">v2.1</span></h1>
 
         <section class="card">
             <h2 class="section-title">Pelaajien määrä</h2>
@@ -533,19 +533,92 @@
             return numbers[value] ?? null;
         }
 
+        function decodeCompactDigits(digits) {
+            /*
+                iPhone voi yhdistää puheen yhdeksi luvuksi:
+
+                2 pelaajaa:
+                "viis neljä"       -> "54"
+                "yks viis neljä"   -> "154"
+                "kymmenen viis neljä" -> "1054"
+            */
+
+            const digitArray = digits.split("").map(Number);
+
+            // Pelkät tulokset nykyiselle seuraavalle reiälle.
+            if (digits.length === playerCount) {
+                return digitArray;
+            }
+
+            // Yksinumeroinen reikä 1–9 + pelaajien tulokset.
+            if (digits.length === playerCount + 1) {
+                const hole = Number(digits.slice(0, 1));
+                const scores = digits.slice(1).split("").map(Number);
+
+                if (hole >= 1 && hole <= 9) {
+                    return [hole, ...scores];
+                }
+            }
+
+            // Kaksinumeroinen reikä 10–18 + pelaajien tulokset.
+            if (digits.length === playerCount + 2) {
+                const hole = Number(digits.slice(0, 2));
+                const scores = digits.slice(2).split("").map(Number);
+
+                if (hole >= 10 && hole <= 18) {
+                    return [hole, ...scores];
+                }
+            }
+
+            // Jos merkkijono ei sovi yllä oleviin muotoihin,
+            // käsitellään se tavallisena kokonaislukuna.
+            return [Number(digits)];
+        }
+
         function extractNumbers(spokenText) {
             const words = normalizeText(spokenText).split(" ");
-            const numbers = [];
+            const recognized = [];
 
             words.forEach(word => {
                 const number = wordToNumber(word);
 
                 if (number !== null) {
-                    numbers.push(number);
+                    recognized.push({
+                        raw: word,
+                        number,
+                        isDigits: /^\d+$/.test(word)
+                    });
                 }
             });
 
-            return numbers;
+            if (recognized.length === 0) {
+                return [];
+            }
+
+            // Esimerkiksi "154" tai "54".
+            if (
+                recognized.length === 1 &&
+                recognized[0].isDigits &&
+                recognized[0].raw.length >= 2
+            ) {
+                return decodeCompactDigits(recognized[0].raw);
+            }
+
+            // Esimerkiksi "reikä 10 54".
+            if (
+                recognized.length === 2 &&
+                recognized[0].number >= 1 &&
+                recognized[0].number <= 18 &&
+                recognized[1].isDigits &&
+                recognized[1].raw.length === playerCount
+            ) {
+                return [
+                    recognized[0].number,
+                    ...recognized[1].raw.split("").map(Number)
+                ];
+            }
+
+            return recognized.map(item => item.number);
         }
 
         function parseVoiceResults(spokenText) {
