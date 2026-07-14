@@ -474,45 +474,6 @@
     };
 }
 
-            if (holeWordIndex !== -1 && words[holeWordIndex + 1]) {
-                hole = wordToNumber(words[holeWordIndex + 1]);
-            }
-
-            if (!hole || hole < 1 || hole > 18) {
-                throw new Error("Reiän numeroa ei tunnistettu.");
-            }
-
-            let addedScores = [];
-
-            players.forEach(player => {
-                const nameWords = player.name.split(" ");
-
-                for (let i = 0; i < words.length; i++) {
-                    const possibleName = words
-                        .slice(i, i + nameWords.length)
-                        .join(" ");
-
-                    if (possibleName === player.name) {
-                        const scoreWord = words[i + nameWords.length];
-                        const score = wordToNumber(scoreWord);
-
-                        if (score !== null && score >= 1 && score <= 20) {
-                            const input = document.querySelector(
-                                `.p${player.playerNumber}[data-hole="${hole}"]`
-                            );
-
-                            if (input) {
-                                input.value = score;
-                                addedScores.push(
-                                    `${player.name}: ${score}`
-                                );
-                            }
-                        }
-
-                        break;
-                    }
-                }
-            });
 
             if (addedScores.length === 0) {
                 throw new Error(
