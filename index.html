@@ -398,18 +398,81 @@
         }
 
         function parseVoiceResults(spokenText) {
-            const text = normalizeText(spokenText);
-            const words = text.split(" ");
-            const players = getPlayerNames();
+    const text = normalizeText(spokenText);
+    const words = text.split(" ");
 
-            let hole = null;
+    const recognizedNumbers = [];
 
-            const holeWordIndex = words.findIndex(word =>
-                word === "reikä" ||
-                word === "reika" ||
-                word === "väylä" ||
-                word === "vayla"
-            );
+    words.forEach(word => {
+        const number = wordToNumber(word);
+
+        if (number !== null) {
+            recognizedNumbers.push(number);
+        }
+    });
+
+    /*
+        Hyväksytyt puhemuodot:
+
+        "Yks viis neljä kuus viis"
+        "Reikä yks viis neljä kuus viis"
+        "1 5 4 6 5"
+
+        Ensimmäinen numero = reikä
+        Seuraavat numerot = pelaajien tulokset
+    */
+
+    if (recognizedNumbers.length < 2) {
+        throw new Error("Reikää ja tuloksia ei tunnistettu.");
+    }
+
+    const hole = recognizedNumbers[0];
+
+    if (hole < 1 || hole > 18) {
+        throw new Error("Reiän numeron pitää olla 1–18.");
+    }
+
+    const scores = recognizedNumbers.slice(1, 5);
+
+    if (scores.length === 0) {
+        throw new Error("Pelaajien tuloksia ei tunnistettu.");
+    }
+
+    const addedScores = [];
+
+    scores.forEach((score, index) => {
+        const player = index + 1;
+
+        if (score < 1 || score > 20) {
+            return;
+        }
+
+        const input = document.querySelector(
+            `.p${player}[data-hole="${hole}"]`
+        );
+
+        if (input) {
+            input.value = score;
+
+            const playerName =
+                document.getElementById("name" + player).value.trim() ||
+                "P" + player;
+
+            addedScores.push(`${playerName}: ${score}`);
+        }
+    });
+
+    if (addedScores.length === 0) {
+        throw new Error("Yhtään kelvollista tulosta ei löytynyt.");
+    }
+
+    calculateScores();
+
+    return {
+        hole,
+        addedScores
+    };
+}
 
             if (holeWordIndex !== -1 && words[holeWordIndex + 1]) {
                 hole = wordToNumber(words[holeWordIndex + 1]);
