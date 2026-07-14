@@ -224,7 +224,7 @@
 
 <body>
     <main class="app">
-        <h1>Golf-tuloslaskuri <span style="font-size:14px;font-weight:normal;">v2.1</span></h1>
+        <h1>Golf-tuloslaskuri <span style="font-size:14px;font-weight:normal;">v2.2</span></h1>
 
         <section class="card">
             <h2 class="section-title">Pelaajien määrä</h2>
@@ -875,6 +875,41 @@
             }
         }
 
+
+        function processResultsFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            const spokenText = params.get("tulos");
+
+            if (!spokenText) {
+                return;
+            }
+
+            try {
+                const result = parseVoiceResults(spokenText);
+
+                voiceStatus.innerHTML =
+                    `<strong>Reikä ${result.hole} tallennettu ✅</strong><br>` +
+                    result.addedScores.join(", ");
+
+                speakConfirmation(result.hole);
+            } catch (error) {
+                voiceStatus.innerHTML =
+                    `<strong>Vastaanotettu:</strong> ${escapeHtml(spokenText)}<br>` +
+                    `<strong>Virhe:</strong> ${escapeHtml(error.message)}`;
+
+                speakMessage(error.message);
+            }
+
+            // Poistetaan tulos-parametri osoitteesta, jotta sama tulos
+            // ei tallennu uudelleen sivua päivitettäessä.
+            const cleanUrl =
+                window.location.origin +
+                window.location.pathname +
+                window.location.hash;
+
+            window.history.replaceState({}, document.title, cleanUrl);
+        }
+
         function resetRound() {
             const confirmed = confirm(
                 "Haluatko varmasti aloittaa uuden kierroksen? Kaikki tulokset poistetaan."
@@ -909,6 +944,7 @@
 
         buildScoreTable();
         loadState();
+        processResultsFromUrl();
     </script>
 </body>
 </html>
