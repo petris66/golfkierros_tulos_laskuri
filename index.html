@@ -317,29 +317,56 @@
         }
 
         function wordToNumber(value) {
-            const numbers = {
-                "yksi": 1,
-                "kaksi": 2,
-                "kolme": 3,
-                "neljä": 4,
-                "viisi": 5,
-                "kuusi": 6,
-                "seitsemän": 7,
-                "kahdeksan": 8,
-                "yhdeksän": 9,
-                "kymmenen": 10,
-                "yksitoista": 11,
-                "kaksitoista": 12,
-                "kolmetoista": 13,
-                "neljätoista": 14,
-                "viisitoista": 15,
-                "kuusitoista": 16,
-                "seitsemäntoista": 17,
-                "kahdeksantoista": 18,
-                "yhdeksäntoista": 19,
-                "kaksikymmentä": 20
-            };
+           const numbers = {
+    "yksi": 1,
+    "yks": 1,
 
+    "kaksi": 2,
+    "kaks": 2,
+
+    "kolme": 3,
+    "kolm": 3,
+
+    "neljä": 4,
+    "nelja": 4,
+    "nelkku": 4,
+
+    "viisi": 5,
+    "viis": 5,
+
+    "kuusi": 6,
+    "kuus": 6,
+
+    "seitsemän": 7,
+    "seitseman": 7,
+    "seiska": 7,
+
+    "kahdeksan": 8,
+    "kahdeks": 8,
+    "kasi": 8,
+
+    "yhdeksän": 9,
+    "yhdeksan": 9,
+    "ysi": 9,
+
+    "kymmenen": 10,
+    "kymppi": 10,
+
+    "yksitoista": 11,
+    "kaksitoista": 12,
+    "kolmetoista": 13,
+    "neljätoista": 14,
+    "neljatoista": 14,
+    "viisitoista": 15,
+    "kuusitoista": 16,
+    "seitsemäntoista": 17,
+    "seitsemantoista": 17,
+    "kahdeksantoista": 18,
+    "yhdeksäntoista": 19,
+    "yhdeksantoista": 19,
+    "kaksikymmentä": 20,
+    "kaksikymmenta": 20
+};
             if (/^\d+$/.test(value)) {
                 return Number(value);
             }
