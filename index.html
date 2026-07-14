@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Golf-laskuri</title>
+    <title>Golf-tuloslaskuri</title>
 
     <style>
         body {
@@ -12,11 +12,12 @@
             padding: 10px;
             margin: 0;
             font-size: 14px;
-            background-color: #f7f7f7;
+            background-color: #f5f5f5;
         }
 
         h2 {
             text-align: center;
+            margin-top: 5px;
         }
 
         table {
@@ -28,7 +29,7 @@
         th,
         td {
             border: 1px solid #ccc;
-            padding: 8px 4px;
+            padding: 7px 3px;
             text-align: center;
         }
 
@@ -36,48 +37,105 @@
             background-color: #e8e8e8;
         }
 
-        input {
+        .score-input {
             width: 100%;
             box-sizing: border-box;
             border: none;
             text-align: center;
-            font-size: 16px;
-            padding: 4px 0;
+            font-size: 17px;
+            padding: 5px 0;
             background: transparent;
         }
 
-        input:focus {
+        .score-input:focus {
             outline: 2px solid #777;
             background-color: #fff;
         }
 
+        .player-name {
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid #aaa;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+            padding: 6px 2px;
+            background-color: white;
+        }
+
+        .subtotal {
+            font-weight: bold;
+            background-color: #eeeeee;
+        }
+
         .total {
             font-weight: bold;
-            background-color: #e8e8e8;
+            background-color: #dddddd;
+            font-size: 16px;
         }
 
         button {
             width: 100%;
-            margin: 20px 0;
-            padding: 12px;
+            margin: 18px 0 8px;
+            padding: 13px;
             font-size: 16px;
             cursor: pointer;
+            border: 1px solid #999;
+            border-radius: 6px;
+            background-color: white;
         }
     </style>
 </head>
 
 <body>
 
-    <h2>Golf-pistelaskuri</h2>
+    <h2>Golf-tuloslaskuri</h2>
 
     <table>
         <thead>
             <tr>
                 <th>Reikä</th>
-                <th>P1</th>
-                <th>P2</th>
-                <th>P3</th>
-                <th>P4</th>
+
+                <th>
+                    <input
+                        type="text"
+                        class="player-name"
+                        id="name1"
+                        value="P1"
+                        maxlength="12"
+                    >
+                </th>
+
+                <th>
+                    <input
+                        type="text"
+                        class="player-name"
+                        id="name2"
+                        value="P2"
+                        maxlength="12"
+                    >
+                </th>
+
+                <th>
+                    <input
+                        type="text"
+                        class="player-name"
+                        id="name3"
+                        value="P3"
+                        maxlength="12"
+                    >
+                </th>
+
+                <th>
+                    <input
+                        type="text"
+                        class="player-name"
+                        id="name4"
+                        value="P4"
+                        maxlength="12"
+                    >
+                </th>
             </tr>
         </thead>
 
@@ -94,8 +152,8 @@
         </tfoot>
     </table>
 
-    <button type="button" onclick="resetAll()">
-        Tyhjennä kaikki
+    <button type="button" onclick="resetScores()">
+        Tyhjennä tulokset
     </button>
 
     <script>
@@ -106,64 +164,117 @@
 
             row.innerHTML = `
                 <td>${hole}</td>
+
                 <td>
                     <input
                         type="number"
                         min="1"
+                        max="20"
                         inputmode="numeric"
-                        class="p1"
+                        class="score-input p1"
+                        data-hole="${hole}"
                         aria-label="Pelaaja 1, reikä ${hole}"
                     >
                 </td>
+
                 <td>
                     <input
                         type="number"
                         min="1"
+                        max="20"
                         inputmode="numeric"
-                        class="p2"
+                        class="score-input p2"
+                        data-hole="${hole}"
                         aria-label="Pelaaja 2, reikä ${hole}"
                     >
                 </td>
+
                 <td>
                     <input
                         type="number"
                         min="1"
+                        max="20"
                         inputmode="numeric"
-                        class="p3"
+                        class="score-input p3"
+                        data-hole="${hole}"
                         aria-label="Pelaaja 3, reikä ${hole}"
                     >
                 </td>
+
                 <td>
                     <input
                         type="number"
                         min="1"
+                        max="20"
                         inputmode="numeric"
-                        class="p4"
+                        class="score-input p4"
+                        data-hole="${hole}"
                         aria-label="Pelaaja 4, reikä ${hole}"
                     >
                 </td>
             `;
 
             tbody.appendChild(row);
-        }
 
-        document.querySelectorAll("input").forEach(input => {
-            input.addEventListener("input", calculateTotals);
-        });
+            if (hole === 9) {
+                const frontNineRow = document.createElement("tr");
+                frontNineRow.className = "subtotal";
 
-        function calculateTotals() {
-            for (let player = 1; player <= 4; player++) {
-                let total = 0;
+                frontNineRow.innerHTML = `
+                    <td>Etuysi</td>
+                    <td id="front1">0</td>
+                    <td id="front2">0</td>
+                    <td id="front3">0</td>
+                    <td id="front4">0</td>
+                `;
 
-                document.querySelectorAll(".p" + player).forEach(input => {
-                    total += Number(input.value) || 0;
-                });
+                tbody.appendChild(frontNineRow);
+            }
 
-                document.getElementById("sum" + player).textContent = total;
+            if (hole === 18) {
+                const backNineRow = document.createElement("tr");
+                backNineRow.className = "subtotal";
+
+                backNineRow.innerHTML = `
+                    <td>Takaysi</td>
+                    <td id="back1">0</td>
+                    <td id="back2">0</td>
+                    <td id="back3">0</td>
+                    <td id="back4">0</td>
+                `;
+
+                tbody.appendChild(backNineRow);
             }
         }
 
-        function resetAll() {
+        document.querySelectorAll(".score-input").forEach(input => {
+            input.addEventListener("input", calculateScores);
+        });
+
+        function calculateScores() {
+            for (let player = 1; player <= 4; player++) {
+                let frontNine = 0;
+                let backNine = 0;
+
+                document.querySelectorAll(".p" + player).forEach(input => {
+                    const score = Number(input.value) || 0;
+                    const hole = Number(input.dataset.hole);
+
+                    if (hole <= 9) {
+                        frontNine += score;
+                    } else {
+                        backNine += score;
+                    }
+                });
+
+                document.getElementById("front" + player).textContent = frontNine;
+                document.getElementById("back" + player).textContent = backNine;
+                document.getElementById("sum" + player).textContent =
+                    frontNine + backNine;
+            }
+        }
+
+        function resetScores() {
             const confirmed = confirm(
                 "Haluatko varmasti tyhjentää kaikki tulokset?"
             );
@@ -172,11 +283,11 @@
                 return;
             }
 
-            document.querySelectorAll("input").forEach(input => {
+            document.querySelectorAll(".score-input").forEach(input => {
                 input.value = "";
             });
 
-            calculateTotals();
+            calculateScores();
         }
     </script>
 
