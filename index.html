@@ -219,12 +219,31 @@
                 font-size: 13px;
             }
         }
+
+        .round-complete-actions { display: none; gap: 8px; margin-top: 10px; }
+        .round-complete-actions.visible { display: grid; }
+        .primary-button { font-weight: bold; background: var(--strong); border-color: #6f7c70; }
+        .modal-backdrop {
+            display: none; position: fixed; inset: 0; z-index: 1000;
+            padding: 18px; background: rgba(0,0,0,.45);
+            align-items: center; justify-content: center;
+        }
+        .modal-backdrop.visible { display: flex; }
+        .modal-card {
+            width: min(100%, 440px); padding: 18px; border-radius: 12px;
+            background: white; box-shadow: 0 12px 40px rgba(0,0,0,.25);
+        }
+        .modal-card h2 { margin: 0 0 10px; text-align: left; font-size: 21px; }
+        .modal-card p { margin: 0 0 14px; line-height: 1.5; }
+        .modal-actions { display: grid; gap: 8px; }
+        .saved-message { margin-top: 10px; font-weight: bold; }
+
     </style>
 </head>
 
 <body>
     <main class="app">
-        <h1>Golf-tuloslaskuri <span style="font-size:14px;font-weight:normal;">v2.2</span></h1>
+        <h1>Golf-tuloslaskuri <span style="font-size:14px;font-weight:normal;">v2.3</span></h1>
 
         <section class="card">
             <h2 class="section-title">Pelaajien määrä</h2>
@@ -262,6 +281,13 @@
 
             <div class="example" id="voiceExample">
                 Esimerkki yhdellä pelaajalla: <strong>yks viis</strong>
+            </div>
+
+            <div class="round-complete-actions" id="roundCompleteActions">
+                <button type="button" class="action-button primary-button"
+                        onclick="saveCompletedRound()">
+                    💾 Tallenna tarkistettu kierros
+                </button>
             </div>
         </section>
 
@@ -334,20 +360,47 @@
         </div>
     </main>
 
+    <div class="modal-backdrop" id="roundCompleteModal" role="dialog"
+         aria-modal="true" aria-labelledby="roundCompleteTitle">
+        <div class="modal-card">
+            <h2 id="roundCompleteTitle">18 reikää pelattu</h2>
+            <p>Haluatko tallentaa kierroksen heti vai tarkistaa tulokset ensin?</p>
+
+            <div class="modal-actions">
+                <button type="button" class="action-button"
+                        onclick="reviewCompletedRound()">
+                    Tarkista kierros
+                </button>
+
+                <button type="button" class="action-button primary-button"
+                        onclick="saveCompletedRound()">
+                    Tallenna kierros
+                </button>
+            </div>
+
+            <div class="saved-message" id="savedMessage"></div>
+        </div>
+    </div>
+
     <script>
         "use strict";
 
         const STORAGE_KEY = "golfTuloslaskuriV2";
+        const HISTORY_KEY = "golfTuloslaskuriHistory";
         const MAX_PLAYERS = 4;
 
         let playerCount = 1;
         let nextHole = 1;
+        let roundComplete = false;
 
         const tableBody = document.getElementById("tableBody");
         const voiceStatus = document.getElementById("voiceStatus");
         const voiceButton = document.getElementById("voiceButton");
         const nextHoleElement = document.getElementById("nextHole");
         const voiceExample = document.getElementById("voiceExample");
+        const roundCompleteModal = document.getElementById("roundCompleteModal");
+        const roundCompleteActions = document.getElementById("roundCompleteActions");
+        const savedMessage = document.getElementById("savedMessage");
 
         function buildScoreTable() {
             tableBody.innerHTML = "";
@@ -687,8 +740,15 @@
 
             calculateScores();
 
-            nextHole = hole < 18 ? hole + 1 : 18;
+            if (hole < 18) {
+                nextHole = hole + 1;
+            } else {
+                nextHole = 18;
+                roundComplete = true;
+            }
+
             updateNextHole();
+            updateRoundCompleteState();
             saveState();
 
             return {
@@ -698,6 +758,14 @@
         }
 
         function startVoiceInput() {
+            if (roundComplete) {
+                voiceStatus.textContent =
+                    "Kierros on valmis. Tarkista tai tallenna kierros ennen uutta kirjausta.";
+                speakMessage("Kierros on valmis");
+                showRoundCompleteModal();
+                return;
+            }
+
             const SpeechRecognition =
                 window.SpeechRecognition ||
                 window.webkitSpeechRecognition;
@@ -749,6 +817,10 @@
                         successfulResult.addedScores.join(", ");
 
                     speakConfirmation(successfulResult.hole);
+
+                    if (successfulResult.hole === 18) {
+                        setTimeout(showRoundCompleteModal, 450);
+                    }
                 } else {
                     voiceStatus.innerHTML =
                         `<strong>Kuulin:</strong> ${escapeHtml(heardText)}<br>` +
@@ -817,6 +889,7 @@
             const state = {
                 playerCount,
                 nextHole,
+                roundComplete,
                 names: [],
                 scores: {}
             };
@@ -850,6 +923,7 @@
 
                 playerCount = Number(state.playerCount) || 1;
                 nextHole = Number(state.nextHole) || 1;
+                roundComplete = Boolean(state.roundComplete);
 
                 for (let player = 1; player <= MAX_PLAYERS; player++) {
                     const name = state.names?.[player - 1];
@@ -868,6 +942,7 @@
                 setPlayerCount(playerCount);
                 updateNextHole();
                 calculateScores();
+                updateRoundCompleteState();
             } catch (error) {
                 localStorage.removeItem(STORAGE_KEY);
                 setPlayerCount(1);
@@ -875,6 +950,86 @@
             }
         }
 
+
+
+        function updateRoundCompleteState() {
+            voiceButton.disabled = roundComplete;
+            voiceButton.textContent = roundComplete
+                ? "Kierros valmis"
+                : "🎤 Anna tulokset puheella";
+
+            roundCompleteActions.classList.toggle("visible", roundComplete);
+        }
+
+        function showRoundCompleteModal() {
+            savedMessage.textContent = "";
+            roundCompleteModal.classList.add("visible");
+        }
+
+        function hideRoundCompleteModal() {
+            roundCompleteModal.classList.remove("visible");
+        }
+
+        function reviewCompletedRound() {
+            hideRoundCompleteModal();
+
+            voiceStatus.innerHTML =
+                "<strong>Kierros valmis.</strong> Tarkista tulokset taulukosta ja korjaa tarvittaessa. " +
+                "Tallenna sen jälkeen painikkeella “Tallenna tarkistettu kierros”.";
+
+            document.querySelector("table").scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        }
+
+        function buildRoundSnapshot() {
+            const snapshot = {
+                savedAt: new Date().toISOString(),
+                playerCount,
+                names: [],
+                scores: {},
+                totals: {}
+            };
+
+            for (let player = 1; player <= playerCount; player++) {
+                const name =
+                    document.getElementById(`name${player}`).value.trim() ||
+                    `P${player}`;
+
+                snapshot.names.push(name);
+                snapshot.scores[player] = [];
+
+                document.querySelectorAll(`.p${player}`).forEach(input => {
+                    snapshot.scores[player].push(Number(input.value) || 0);
+                });
+
+                snapshot.totals[player] =
+                    Number(document.getElementById(`sum${player}`).textContent) || 0;
+            }
+
+            return snapshot;
+        }
+
+        function saveCompletedRound() {
+            const snapshot = buildRoundSnapshot();
+            const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+
+            history.unshift(snapshot);
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+
+            hideRoundCompleteModal();
+
+            voiceStatus.innerHTML =
+                "<strong>Kierros tallennettu ✅</strong><br>" +
+                snapshot.names
+                    .map((name, index) =>
+                        `${escapeHtml(name)}: ${snapshot.totals[index + 1]}`
+                    )
+                    .join(", ");
+
+            speakMessage("Kierros tallennettu");
+        }
 
         function processResultsFromUrl() {
             const params = new URLSearchParams(window.location.search);
@@ -892,6 +1047,10 @@
                     result.addedScores.join(", ");
 
                 speakConfirmation(result.hole);
+
+                if (result.hole === 18) {
+                    setTimeout(showRoundCompleteModal, 450);
+                }
             } catch (error) {
                 voiceStatus.innerHTML =
                     `<strong>Vastaanotettu:</strong> ${escapeHtml(spokenText)}<br>` +
@@ -924,7 +1083,9 @@
             });
 
             nextHole = 1;
+            roundComplete = false;
             updateNextHole();
+            updateRoundCompleteState();
             calculateScores();
             saveState();
 
@@ -944,6 +1105,7 @@
 
         buildScoreTable();
         loadState();
+        updateRoundCompleteState();
         processResultsFromUrl();
     </script>
 </body>
