@@ -339,7 +339,7 @@
 
 <body>
     <main class="app">
-        <h1>Golf-tuloslaskuri <span style="font-size:14px;font-weight:normal;">v2.5</span></h1>
+        <h1>Golf-tuloslaskuri <span style="font-size:14px;font-weight:normal;">v2.5.1</span></h1>
 
         <section class="card">
             <h2 class="section-title">Pelaajien määrä</h2>
@@ -461,7 +461,18 @@
 
         <section class="card history-card" id="historyCard">
             <h2 class="section-title">Tallennetut kierrokset</h2>
+            <div class="muted" id="historyCount">Tallennettuja kierroksia: 0</div>
             <div class="history-list" id="historyList"></div>
+
+            <button
+                type="button"
+                class="action-button danger-button"
+                id="deleteAllRoundsButton"
+                onclick="deleteAllRounds()"
+                style="display:none; margin-top:10px;"
+            >
+                Poista kaikki kierrokset
+            </button>
         </section>
     </main>
 
@@ -552,6 +563,9 @@
         const recentCoursesList = document.getElementById("recentCourses");
         const historyCard = document.getElementById("historyCard");
         const historyList = document.getElementById("historyList");
+        const historyCount = document.getElementById("historyCount");
+        const deleteAllRoundsButton =
+            document.getElementById("deleteAllRoundsButton");
 
         function buildScoreTable() {
             tableBody.innerHTML = "";
@@ -1319,7 +1333,28 @@
 
         function getRoundHistory() {
             try {
-                return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+                const history = JSON.parse(
+                    localStorage.getItem(HISTORY_KEY) || "[]"
+                );
+
+                let changed = false;
+
+                history.forEach((round, index) => {
+                    if (!round.id) {
+                        round.id =
+                            `legacy-${round.savedAt || round.date || "round"}-${index}`;
+                        changed = true;
+                    }
+                });
+
+                if (changed) {
+                    localStorage.setItem(
+                        HISTORY_KEY,
+                        JSON.stringify(history)
+                    );
+                }
+
+                return history;
             } catch (error) {
                 return [];
             }
@@ -1348,7 +1383,12 @@
 
         function renderHistory() {
             const history = getRoundHistory();
+
             historyList.innerHTML = "";
+            historyCount.textContent =
+                `Tallennettuja kierroksia: ${history.length}`;
+            deleteAllRoundsButton.style.display =
+                history.length > 0 ? "block" : "none";
 
             if (history.length === 0) {
                 historyList.innerHTML =
@@ -1379,14 +1419,14 @@
                         <button
                             type="button"
                             class="small-button"
-                            onclick="shareRound('${round.id}')"
+                            onclick="shareRound('${escapeHtml(round.id)}')"
                         >
-                            Jaa
+                            Jaa tuloskortti
                         </button>
                         <button
                             type="button"
                             class="small-button danger-button"
-                            onclick="deleteRound('${round.id}')"
+                            onclick="deleteRound('${escapeHtml(round.id)}')"
                         >
                             Poista
                         </button>
@@ -1407,20 +1447,41 @@
 
             round.names.forEach((name, index) => {
                 const player = index + 1;
-                const front = (round.scores[player] || [])
+                const scores = round.scores[player] || [];
+                const front = scores
                     .slice(0, 9)
                     .reduce((sum, value) => sum + Number(value || 0), 0);
-                const back = (round.scores[player] || [])
+                const back = scores
                     .slice(9, 18)
                     .reduce((sum, value) => sum + Number(value || 0), 0);
 
+                lines.push(`${name}`);
                 lines.push(
-                    `${name}: etuysi ${front}, takaysi ${back}, yhteensä ${round.totals[player]}`
+                    "1–9: " +
+                    scores
+                        .slice(0, 9)
+                        .map((score, holeIndex) =>
+                            `${holeIndex + 1}:${score || "-"}`
+                        )
+                        .join("  ")
                 );
+                lines.push(
+                    "10–18: " +
+                    scores
+                        .slice(9, 18)
+                        .map((score, holeIndex) =>
+                            `${holeIndex + 10}:${score || "-"}`
+                        )
+                        .join("  ")
+                );
+                lines.push(
+                    `Etuysi ${front}, takaysi ${back}, yhteensä ${round.totals[player]}`
+                );
+                lines.push("");
             });
 
             if (round.notes) {
-                lines.push("", `Huomautus: ${round.notes}`);
+                lines.push(`Huomautus: ${round.notes}`);
             }
 
             return lines.join("\n");
@@ -1458,18 +1519,52 @@
         }
 
         function deleteRound(roundId) {
+            const history = getRoundHistory();
+            const round = history.find(item => item.id === roundId);
+
+            if (!round) {
+                alert("Poistettavaa kierrosta ei löytynyt.");
+                return;
+            }
+
             const confirmed = confirm(
-                "Haluatko varmasti poistaa tämän tallennetun kierroksen?"
+                "Poistetaanko tämä kierros?\n\n" +
+                `${round.course || "Kenttä nimeämättä"}\n` +
+                `${formatDate(round.date)}`
             );
 
             if (!confirmed) {
                 return;
             }
 
-            const history = getRoundHistory()
-                .filter(item => item.id !== roundId);
+            const updatedHistory = history.filter(
+                item => item.id !== roundId
+            );
 
-            localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+            localStorage.setItem(
+                HISTORY_KEY,
+                JSON.stringify(updatedHistory)
+            );
+
+            renderHistory();
+        }
+
+        function deleteAllRounds() {
+            const history = getRoundHistory();
+
+            if (history.length === 0) {
+                return;
+            }
+
+            const confirmed = confirm(
+                `Poistetaanko kaikki ${history.length} tallennettua kierrosta?`
+            );
+
+            if (!confirmed) {
+                return;
+            }
+
+            localStorage.removeItem(HISTORY_KEY);
             renderHistory();
         }
 
