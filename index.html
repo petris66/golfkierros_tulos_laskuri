@@ -238,12 +238,19 @@
         .modal-actions { display: grid; gap: 8px; }
         .saved-message { margin-top: 10px; font-weight: bold; }
 
+        .voice-card {
+            position: sticky;
+            top: 8px;
+            z-index: 50;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.10);
+        }
+
     </style>
 </head>
 
 <body>
     <main class="app">
-        <h1>Golf-tuloslaskuri <span style="font-size:14px;font-weight:normal;">v2.3</span></h1>
+        <h1>Golf-tuloslaskuri <span style="font-size:14px;font-weight:normal;">v2.4</span></h1>
 
         <section class="card">
             <h2 class="section-title">Pelaajien määrä</h2>
@@ -265,7 +272,7 @@
             <div class="next-hole-number" id="nextHole">1</div>
         </section>
 
-        <section class="card">
+        <section class="card voice-card" id="voiceCard">
             <button
                 type="button"
                 class="action-button"
@@ -392,6 +399,7 @@
         let playerCount = 1;
         let nextHole = 1;
         let roundComplete = false;
+        let frontNineAnnounced = false;
 
         const tableBody = document.getElementById("tableBody");
         const voiceStatus = document.getElementById("voiceStatus");
@@ -407,6 +415,7 @@
 
             for (let hole = 1; hole <= 18; hole++) {
                 const row = document.createElement("tr");
+                row.dataset.holeRow = hole;
 
                 row.innerHTML = `
                     <td class="hole-cell">${hole}</td>
@@ -428,6 +437,7 @@
                 input.addEventListener("input", () => {
                     calculateScores();
                     saveState();
+                    checkFrontNineCompletion();
                 });
             });
         }
@@ -817,6 +827,7 @@
                         successfulResult.addedScores.join(", ");
 
                     speakConfirmation(successfulResult.hole);
+                    checkFrontNineCompletion();
 
                     if (successfulResult.hole === 18) {
                         setTimeout(showRoundCompleteModal, 450);
@@ -890,6 +901,7 @@
                 playerCount,
                 nextHole,
                 roundComplete,
+                frontNineAnnounced,
                 names: [],
                 scores: {}
             };
@@ -924,6 +936,7 @@
                 playerCount = Number(state.playerCount) || 1;
                 nextHole = Number(state.nextHole) || 1;
                 roundComplete = Boolean(state.roundComplete);
+                frontNineAnnounced = Boolean(state.frontNineAnnounced);
 
                 for (let player = 1; player <= MAX_PLAYERS; player++) {
                     const name = state.names?.[player - 1];
@@ -951,6 +964,71 @@
         }
 
 
+
+
+        function isFrontNineComplete() {
+            for (let player = 1; player <= playerCount; player++) {
+                for (let hole = 1; hole <= 9; hole++) {
+                    const input = document.querySelector(
+                        `.p${player}[data-hole="${hole}"]`
+                    );
+
+                    if (!input || input.value === "") {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        function getFrontNineSummary() {
+            const parts = [];
+
+            for (let player = 1; player <= playerCount; player++) {
+                const name =
+                    document.getElementById(`name${player}`).value.trim() ||
+                    `P${player}`;
+
+                const total =
+                    Number(document.getElementById(`front${player}`).textContent) || 0;
+
+                parts.push(`${name} ${total}`);
+            }
+
+            return parts;
+        }
+
+        function checkFrontNineCompletion() {
+            if (frontNineAnnounced || !isFrontNineComplete()) {
+                return;
+            }
+
+            frontNineAnnounced = true;
+            saveState();
+
+            const summary = getFrontNineSummary();
+
+            voiceStatus.innerHTML =
+                "<strong>Etuysi pelattu ✅</strong><br>" +
+                summary.map(escapeHtml).join(", ");
+
+            speakMessage(
+                "Etuysi pelattu. " +
+                summary.join(", ")
+            );
+
+            const holeTenRow = document.querySelector('[data-hole-row="10"]');
+
+            if (holeTenRow) {
+                setTimeout(() => {
+                    holeTenRow.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start"
+                    });
+                }, 900);
+            }
+        }
 
         function updateRoundCompleteState() {
             voiceButton.disabled = roundComplete;
@@ -1047,6 +1125,7 @@
                     result.addedScores.join(", ");
 
                 speakConfirmation(result.hole);
+                checkFrontNineCompletion();
 
                 if (result.hole === 18) {
                     setTimeout(showRoundCompleteModal, 450);
@@ -1084,6 +1163,7 @@
 
             nextHole = 1;
             roundComplete = false;
+            frontNineAnnounced = false;
             updateNextHole();
             updateRoundCompleteState();
             calculateScores();
