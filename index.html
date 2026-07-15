@@ -245,12 +245,101 @@
             box-shadow: 0 4px 14px rgba(0, 0, 0, 0.10);
         }
 
+
+        .form-grid {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .form-grid label {
+            display: grid;
+            gap: 5px;
+            font-weight: bold;
+        }
+
+        .form-grid input,
+        .form-grid select,
+        .form-grid textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font: inherit;
+            background: white;
+        }
+
+        .form-grid textarea {
+            min-height: 76px;
+            resize: vertical;
+        }
+
+        .history-card {
+            display: none;
+            margin-top: 12px;
+        }
+
+        .history-card.visible {
+            display: block;
+        }
+
+        .history-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .history-item {
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            background: white;
+        }
+
+        .history-item h3 {
+            margin: 0 0 6px;
+            font-size: 17px;
+        }
+
+        .history-meta,
+        .history-totals {
+            margin: 4px 0;
+            line-height: 1.45;
+        }
+
+        .history-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .small-button {
+            min-height: 40px;
+            padding: 8px;
+            border: 1px solid #9da69e;
+            border-radius: 8px;
+            background: white;
+            font-size: 14px;
+        }
+
+        .danger-button {
+            background: #fff4f4;
+        }
+
+        .history-empty {
+            padding: 12px;
+            border: 1px dashed var(--border);
+            border-radius: 8px;
+            text-align: center;
+            color: #59625b;
+        }
+
     </style>
 </head>
 
 <body>
     <main class="app">
-        <h1>Golf-tuloslaskuri <span style="font-size:14px;font-weight:normal;">v2.4</span></h1>
+        <h1>Golf-tuloslaskuri <span style="font-size:14px;font-weight:normal;">v2.5</span></h1>
 
         <section class="card">
             <h2 class="section-title">Pelaajien määrä</h2>
@@ -364,19 +453,65 @@
             <button type="button" class="action-button" onclick="resetRound()">
                 Aloita uusi kierros
             </button>
+
+            <button type="button" class="action-button" onclick="toggleHistory()">
+                📚 Kierroshistoria
+            </button>
         </div>
+
+        <section class="card history-card" id="historyCard">
+            <h2 class="section-title">Tallennetut kierrokset</h2>
+            <div class="history-list" id="historyList"></div>
+        </section>
     </main>
 
     <div class="modal-backdrop" id="roundCompleteModal" role="dialog"
          aria-modal="true" aria-labelledby="roundCompleteTitle">
         <div class="modal-card">
             <h2 id="roundCompleteTitle">18 reikää pelattu</h2>
-            <p>Haluatko tallentaa kierroksen heti vai tarkistaa tulokset ensin?</p>
+            <p>Lisää kierroksen tiedot ja tallenna tai palaa tarkistamaan tulokset.</p>
+
+            <div class="form-grid">
+                <label>
+                    Kenttä
+                    <input
+                        type="text"
+                        id="courseName"
+                        list="recentCourses"
+                        placeholder="Esimerkiksi Master Golf"
+                        maxlength="60"
+                    >
+                    <datalist id="recentCourses"></datalist>
+                </label>
+
+                <label>
+                    Päivämäärä
+                    <input type="date" id="roundDate">
+                </label>
+
+                <label>
+                    Pelimuoto
+                    <select id="gameFormat">
+                        <option value="Lyöntipeli">Lyöntipeli</option>
+                        <option value="Stableford">Stableford</option>
+                        <option value="Muu">Muu</option>
+                    </select>
+                </label>
+
+                <label>
+                    Huomautukset
+                    <textarea
+                        id="roundNotes"
+                        placeholder="Valinnainen huomautus kierroksesta"
+                        maxlength="500"
+                    ></textarea>
+                </label>
+            </div>
 
             <div class="modal-actions">
                 <button type="button" class="action-button"
                         onclick="reviewCompletedRound()">
-                    Tarkista kierros
+                    Palaa tarkistamaan
                 </button>
 
                 <button type="button" class="action-button primary-button"
@@ -387,6 +522,7 @@
 
             <div class="saved-message" id="savedMessage"></div>
         </div>
+    </div>
     </div>
 
     <script>
@@ -409,6 +545,13 @@
         const roundCompleteModal = document.getElementById("roundCompleteModal");
         const roundCompleteActions = document.getElementById("roundCompleteActions");
         const savedMessage = document.getElementById("savedMessage");
+        const courseNameInput = document.getElementById("courseName");
+        const roundDateInput = document.getElementById("roundDate");
+        const gameFormatInput = document.getElementById("gameFormat");
+        const roundNotesInput = document.getElementById("roundNotes");
+        const recentCoursesList = document.getElementById("recentCourses");
+        const historyCard = document.getElementById("historyCard");
+        const historyList = document.getElementById("historyList");
 
         function buildScoreTable() {
             tableBody.innerHTML = "";
@@ -1041,6 +1184,7 @@
 
         function showRoundCompleteModal() {
             savedMessage.textContent = "";
+            prepareRoundMetadataForm();
             roundCompleteModal.classList.add("visible");
         }
 
@@ -1063,7 +1207,14 @@
 
         function buildRoundSnapshot() {
             const snapshot = {
+                id: crypto.randomUUID
+                    ? crypto.randomUUID()
+                    : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
                 savedAt: new Date().toISOString(),
+                course: courseNameInput.value.trim() || "Kenttä nimeämättä",
+                date: roundDateInput.value || getTodayDateValue(),
+                gameFormat: gameFormatInput.value,
+                notes: roundNotesInput.value.trim(),
                 playerCount,
                 names: [],
                 scores: {},
@@ -1091,15 +1242,18 @@
 
         function saveCompletedRound() {
             const snapshot = buildRoundSnapshot();
-            const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+            const history = getRoundHistory();
 
             history.unshift(snapshot);
             localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
 
+            rememberCourse(snapshot.course);
             hideRoundCompleteModal();
+            renderHistory();
 
             voiceStatus.innerHTML =
-                "<strong>Kierros tallennettu ✅</strong><br>" +
+                `<strong>Kierros tallennettu ✅</strong><br>` +
+                `${escapeHtml(snapshot.course)}, ${formatDate(snapshot.date)}<br>` +
                 snapshot.names
                     .map((name, index) =>
                         `${escapeHtml(name)}: ${snapshot.totals[index + 1]}`
@@ -1107,6 +1261,216 @@
                     .join(", ");
 
             speakMessage("Kierros tallennettu");
+        }
+
+        function getTodayDateValue() {
+            const now = new Date();
+            const local = new Date(
+                now.getTime() - now.getTimezoneOffset() * 60000
+            );
+
+            return local.toISOString().slice(0, 10);
+        }
+
+        function prepareRoundMetadataForm() {
+            if (!roundDateInput.value) {
+                roundDateInput.value = getTodayDateValue();
+            }
+
+            updateRecentCoursesList();
+        }
+
+        function getRecentCourses() {
+            try {
+                return JSON.parse(
+                    localStorage.getItem("golfRecentCourses") || "[]"
+                );
+            } catch (error) {
+                return [];
+            }
+        }
+
+        function rememberCourse(course) {
+            if (!course || course === "Kenttä nimeämättä") {
+                return;
+            }
+
+            const courses = getRecentCourses()
+                .filter(item => item.toLowerCase() !== course.toLowerCase());
+
+            courses.unshift(course);
+            localStorage.setItem(
+                "golfRecentCourses",
+                JSON.stringify(courses.slice(0, 10))
+            );
+
+            updateRecentCoursesList();
+        }
+
+        function updateRecentCoursesList() {
+            recentCoursesList.innerHTML = "";
+
+            getRecentCourses().forEach(course => {
+                const option = document.createElement("option");
+                option.value = course;
+                recentCoursesList.appendChild(option);
+            });
+        }
+
+        function getRoundHistory() {
+            try {
+                return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+            } catch (error) {
+                return [];
+            }
+        }
+
+        function formatDate(dateValue) {
+            if (!dateValue) {
+                return "";
+            }
+
+            const [year, month, day] = dateValue.split("-");
+            return `${day}.${month}.${year}`;
+        }
+
+        function toggleHistory() {
+            historyCard.classList.toggle("visible");
+
+            if (historyCard.classList.contains("visible")) {
+                renderHistory();
+                historyCard.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start"
+                });
+            }
+        }
+
+        function renderHistory() {
+            const history = getRoundHistory();
+            historyList.innerHTML = "";
+
+            if (history.length === 0) {
+                historyList.innerHTML =
+                    '<div class="history-empty">Tallennettuja kierroksia ei vielä ole.</div>';
+                return;
+            }
+
+            history.forEach(round => {
+                const item = document.createElement("article");
+                item.className = "history-item";
+
+                const totals = round.names
+                    .map((name, index) =>
+                        `${escapeHtml(name)}: ${round.totals[index + 1]}`
+                    )
+                    .join(", ");
+
+                item.innerHTML = `
+                    <h3>${escapeHtml(round.course || "Kenttä nimeämättä")}</h3>
+                    <div class="history-meta">
+                        ${formatDate(round.date)} · ${escapeHtml(round.gameFormat || "")}
+                    </div>
+                    <div class="history-totals">${totals}</div>
+                    ${round.notes
+                        ? `<div class="history-meta">${escapeHtml(round.notes)}</div>`
+                        : ""}
+                    <div class="history-actions">
+                        <button
+                            type="button"
+                            class="small-button"
+                            onclick="shareRound('${round.id}')"
+                        >
+                            Jaa
+                        </button>
+                        <button
+                            type="button"
+                            class="small-button danger-button"
+                            onclick="deleteRound('${round.id}')"
+                        >
+                            Poista
+                        </button>
+                    </div>
+                `;
+
+                historyList.appendChild(item);
+            });
+        }
+
+        function buildShareText(round) {
+            const lines = [
+                "Golfkierros",
+                `${round.course || "Kenttä nimeämättä"} – ${formatDate(round.date)}`,
+                round.gameFormat || "",
+                ""
+            ];
+
+            round.names.forEach((name, index) => {
+                const player = index + 1;
+                const front = (round.scores[player] || [])
+                    .slice(0, 9)
+                    .reduce((sum, value) => sum + Number(value || 0), 0);
+                const back = (round.scores[player] || [])
+                    .slice(9, 18)
+                    .reduce((sum, value) => sum + Number(value || 0), 0);
+
+                lines.push(
+                    `${name}: etuysi ${front}, takaysi ${back}, yhteensä ${round.totals[player]}`
+                );
+            });
+
+            if (round.notes) {
+                lines.push("", `Huomautus: ${round.notes}`);
+            }
+
+            return lines.join("\n");
+        }
+
+        async function shareRound(roundId) {
+            const round = getRoundHistory().find(item => item.id === roundId);
+
+            if (!round) {
+                return;
+            }
+
+            const text = buildShareText(round);
+
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: `Golfkierros – ${round.course}`,
+                        text
+                    });
+                    return;
+                } catch (error) {
+                    if (error.name === "AbortError") {
+                        return;
+                    }
+                }
+            }
+
+            try {
+                await navigator.clipboard.writeText(text);
+                alert("Kierroksen tiedot kopioitiin leikepöydälle.");
+            } catch (error) {
+                prompt("Kopioi kierroksen tiedot:", text);
+            }
+        }
+
+        function deleteRound(roundId) {
+            const confirmed = confirm(
+                "Haluatko varmasti poistaa tämän tallennetun kierroksen?"
+            );
+
+            if (!confirmed) {
+                return;
+            }
+
+            const history = getRoundHistory()
+                .filter(item => item.id !== roundId);
+
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+            renderHistory();
         }
 
         function processResultsFromUrl() {
@@ -1186,6 +1550,8 @@
         buildScoreTable();
         loadState();
         updateRoundCompleteState();
+        prepareRoundMetadataForm();
+        renderHistory();
         processResultsFromUrl();
     </script>
 </body>
