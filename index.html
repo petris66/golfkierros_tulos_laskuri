@@ -370,7 +370,7 @@
 
 <body>
     <main class="app">
-        <h1>Golf-tuloslaskuri <span style="font-size:14px;font-weight:normal;">v2.7.3</span></h1>
+        <h1>Golf-tuloslaskuri <span style="font-size:14px;font-weight:normal;">v2.7.4</span></h1>
 
         <section class="card">
             <h2 class="section-title">Pelaajien määrä</h2>
@@ -932,10 +932,6 @@
                 .replace(/[\u0300-\u036f]/g, "")
                 .replace(/[^a-z]/g, "");
 
-            if (!normalized) {
-                return false;
-            }
-
             const accepted = new Set([
                 "viiva",
                 "viivan",
@@ -952,44 +948,10 @@
                 "rasti"
             ]);
 
-            if (
+            return (
                 accepted.has(normalized) ||
-                normalized.startsWith("viiv") ||
-                normalized.startsWith("vii")
-            ) {
-                return true;
-            }
-
-            // Sallitaan pieni puheentunnistuksen kirjoitusvirhe.
-            const target = "viiva";
-
-            if (Math.abs(normalized.length - target.length) > 2) {
-                return false;
-            }
-
-            let previous = Array.from(
-                { length: target.length + 1 },
-                (_, index) => index
+                normalized.startsWith("viiv")
             );
-
-            for (let i = 1; i <= normalized.length; i++) {
-                const current = [i];
-
-                for (let j = 1; j <= target.length; j++) {
-                    const cost =
-                        normalized[i - 1] === target[j - 1] ? 0 : 1;
-
-                    current[j] = Math.min(
-                        current[j - 1] + 1,
-                        previous[j] + 1,
-                        previous[j - 1] + cost
-                    );
-                }
-
-                previous = current;
-            }
-
-            return previous[target.length] <= 2;
         }
 
         function extractVoiceTokens(spokenText) {
