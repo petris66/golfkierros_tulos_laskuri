@@ -370,7 +370,7 @@
 
 <body>
     <main class="app">
-        <h1>Golf-tuloslaskuri <span style="font-size:14px;font-weight:normal;">v2.7.1</span></h1>
+        <h1>Golf-tuloslaskuri <span style="font-size:14px;font-weight:normal;">v2.7.2</span></h1>
 
         <section class="card">
             <h2 class="section-title">Pelaajien määrä</h2>
@@ -924,18 +924,55 @@
             return [Number(digits)];
         }
 
+        function isDashWord(word) {
+            const normalized = String(word || "")
+                .toLowerCase()
+                .replace(/[^a-zåäö]/g, "");
+
+            const accepted = new Set([
+                "viiva",
+                "viivan",
+                "viivaa",
+                "viivaan",
+                "viivaksi",
+                "viivat",
+                "viva",
+                "viia",
+                "viiiva",
+                "miinus",
+                "miinusta",
+                "rasti"
+            ]);
+
+            if (accepted.has(normalized) || normalized.startsWith("viiv")) {
+                return true;
+            }
+
+            // Sallitaan yksi puheentunnistuksen kirjainvirhe sanassa "viiva".
+            const target = "viiva";
+
+            if (Math.abs(normalized.length - target.length) > 1) {
+                return false;
+            }
+
+            let differences = 0;
+            const maxLength = Math.max(normalized.length, target.length);
+
+            for (let i = 0; i < maxLength; i++) {
+                if (normalized[i] !== target[i]) {
+                    differences++;
+                }
+            }
+
+            return differences <= 1;
+        }
+
         function extractVoiceTokens(spokenText) {
             const words = normalizeText(spokenText).split(" ");
             const tokens = [];
 
             words.forEach(word => {
-                if (
-                    word.startsWith("viiv") ||
-                    word === "viva" ||
-                    word === "viia" ||
-                    word === "miinus" ||
-                    word === "rasti"
-                ) {
+                if (isDashWord(word)) {
                     tokens.push("-");
                     return;
                 }
