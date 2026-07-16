@@ -370,7 +370,7 @@
 
 <body>
     <main class="app">
-        <h1>Golf-tuloslaskuri <span style="font-size:14px;font-weight:normal;">v2.7.2</span></h1>
+        <h1>Golf-tuloslaskuri <span style="font-size:14px;font-weight:normal;">v2.7.3</span></h1>
 
         <section class="card">
             <h2 class="section-title">Pelaajien määrä</h2>
@@ -843,6 +843,7 @@
             return text
                 .toLowerCase()
                 .replace(/[.,:;!?]/g, " ")
+                .replace(/[–—−-]/g, " viiva ")
                 .replace(/\s+/g, " ")
                 .trim();
         }
@@ -927,7 +928,13 @@
         function isDashWord(word) {
             const normalized = String(word || "")
                 .toLowerCase()
-                .replace(/[^a-zåäö]/g, "");
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^a-z]/g, "");
+
+            if (!normalized) {
+                return false;
+            }
 
             const accepted = new Set([
                 "viiva",
@@ -939,32 +946,50 @@
                 "viva",
                 "viia",
                 "viiiva",
+                "viivaus",
                 "miinus",
                 "miinusta",
                 "rasti"
             ]);
 
-            if (accepted.has(normalized) || normalized.startsWith("viiv")) {
+            if (
+                accepted.has(normalized) ||
+                normalized.startsWith("viiv") ||
+                normalized.startsWith("vii")
+            ) {
                 return true;
             }
 
-            // Sallitaan yksi puheentunnistuksen kirjainvirhe sanassa "viiva".
+            // Sallitaan pieni puheentunnistuksen kirjoitusvirhe.
             const target = "viiva";
 
-            if (Math.abs(normalized.length - target.length) > 1) {
+            if (Math.abs(normalized.length - target.length) > 2) {
                 return false;
             }
 
-            let differences = 0;
-            const maxLength = Math.max(normalized.length, target.length);
+            let previous = Array.from(
+                { length: target.length + 1 },
+                (_, index) => index
+            );
 
-            for (let i = 0; i < maxLength; i++) {
-                if (normalized[i] !== target[i]) {
-                    differences++;
+            for (let i = 1; i <= normalized.length; i++) {
+                const current = [i];
+
+                for (let j = 1; j <= target.length; j++) {
+                    const cost =
+                        normalized[i - 1] === target[j - 1] ? 0 : 1;
+
+                    current[j] = Math.min(
+                        current[j - 1] + 1,
+                        previous[j] + 1,
+                        previous[j - 1] + cost
+                    );
                 }
+
+                previous = current;
             }
 
-            return differences <= 1;
+            return previous[target.length] <= 2;
         }
 
         function extractVoiceTokens(spokenText) {
@@ -1012,9 +1037,23 @@
                 ];
             }
 
-            return tokens.map(token =>
+            const mappedTokens = tokens.map(token =>
                 token === "-" ? "-" : token.number
             );
+
+            if (mappedTokens.length === 0) {
+                const raw = String(spokenText || "").toLowerCase();
+
+                if (
+                    raw.includes("viiva") ||
+                    raw.includes("viva") ||
+                    /[–—−-]/.test(raw)
+                ) {
+                    return ["-"];
+                }
+            }
+
+            return mappedTokens;
         }
 
         function parseVoiceResults(spokenText) {
