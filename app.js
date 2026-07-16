@@ -17,7 +17,6 @@
         const voiceStatus = document.getElementById("voiceStatus");
         const voiceButton = document.getElementById("voiceButton");
         const nextHoleElement = document.getElementById("nextHole");
-        const voiceExample = document.getElementById("voiceExample");
         const roundCompleteModal = document.getElementById("roundCompleteModal");
         const roundCompleteActions = document.getElementById("roundCompleteActions");
         const savedMessage = document.getElementById("savedMessage");
@@ -128,20 +127,8 @@
                 column.classList.toggle("hidden-player", player > playerCount);
             });
 
-            updateVoiceExample();
             calculateScores();
             saveState();
-        }
-
-        function updateVoiceExample() {
-            const examples = {
-                1: "Esimerkki: <strong>yks viis</strong> tai <strong>yks viiva</strong>",
-                2: "Esimerkki: <strong>yks viis neljä</strong> tai <strong>yks viis viiva</strong>",
-                3: "Esimerkki: <strong>yks viis neljä kuus</strong>",
-                4: "Esimerkki: <strong>yks viis neljä kuus viis</strong>"
-            };
-
-            voiceExample.innerHTML = examples[playerCount];
         }
 
         function selectScoreInput(input) {
@@ -816,9 +803,6 @@
                 row.classList.remove("recently-saved");
             }, 2200);
 
-            requestAnimationFrame(() => {
-                scrollElementBelowVoiceCard(row, 18);
-            });
         }
 
         function startVoiceInput() {
@@ -1153,13 +1137,6 @@
                 speakMessage(frontNineSpeech);
             }
 
-            const holeTenRow = document.querySelector('[data-hole-row="10"]');
-
-            if (holeTenRow) {
-                setTimeout(() => {
-                    scrollElementBelowVoiceCard(holeTenRow, 18);
-                }, 1050);
-            }
         }
 
         function updateRoundCompleteState() {
