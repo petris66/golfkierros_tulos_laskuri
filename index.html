@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Golf-tuloslaskuri</title>
+    <title>Golf Voice Scorecard AI</title>
 
     <style>
         :root {
@@ -365,15 +365,321 @@
             color: #59625b;
         }
 
+        /* --- Golf Voice Scorecard AI visual theme --- */
+        :root {
+            --forest: #173f18;
+            --forest-2: #286f24;
+            --leaf: #75a96c;
+            --mint: #eaf5e5;
+            --cream: #fbfcf7;
+            --gold: #f2d178;
+            --ink: #173019;
+            --line: #bfd2ba;
+            --shadow: 0 14px 34px rgba(22, 63, 24, 0.14);
+        }
+
+        body {
+            padding: 0 12px 32px;
+            color: var(--ink);
+            background:
+                linear-gradient(180deg, #173f18 0, #315f31 245px, rgba(214, 237, 204, .94) 600px),
+                repeating-linear-gradient(
+                    135deg,
+                    rgba(39, 111, 36, .06) 0,
+                    rgba(39, 111, 36, .06) 2px,
+                    transparent 2px,
+                    transparent 34px
+                );
+            background-attachment: fixed;
+        }
+
+        .app {
+            max-width: 760px;
+        }
+
+        .hero {
+            min-height: 330px;
+            padding: 58px 16px 30px;
+            color: white;
+            text-align: left;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 10px 18px;
+            border: 2px solid rgba(242, 209, 120, .58);
+            border-radius: 999px;
+            color: #7b5710;
+            background: #fff5cf;
+            box-shadow: 0 8px 22px rgba(0, 0, 0, .13);
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: .22em;
+        }
+
+        .hero h1 {
+            margin: 28px 0 12px;
+            text-align: left;
+            line-height: .96;
+            letter-spacing: -.035em;
+        }
+
+        .hero h1 span,
+        .hero h1 strong {
+            display: block;
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: clamp(43px, 12vw, 76px);
+        }
+
+        .hero h1 strong {
+            color: var(--gold);
+        }
+
+        .hero-subtitle {
+            margin: 22px 0 10px;
+            font-size: 18px;
+            color: rgba(255,255,255,.92);
+        }
+
+        .hero-signature {
+            margin: 0;
+            color: rgba(255,255,255,.62);
+            font-weight: 600;
+            letter-spacing: .06em;
+        }
+
+        .card,
+        .scorecard-card {
+            margin-bottom: 16px;
+            padding: 20px;
+            border: 1px solid rgba(158, 188, 151, .65);
+            border-radius: 28px;
+            background: rgba(253, 254, 249, .96);
+            box-shadow: var(--shadow);
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin: 0 0 16px;
+            color: var(--forest-2);
+            font-size: 14px;
+            font-weight: 900;
+            letter-spacing: .22em;
+        }
+
+        .section-title::after {
+            content: "";
+            height: 2px;
+            flex: 1;
+            background: linear-gradient(90deg, #a8c7a2, transparent);
+        }
+
+        .section-help {
+            margin: -7px 0 14px;
+            color: #557254;
+            font-size: 14px;
+        }
+
+        .player-count {
+            gap: 10px;
+        }
+
+        .player-count button,
+        .action-button,
+        .small-button {
+            border: 1px solid #afc6aa;
+            border-radius: 16px;
+            color: var(--ink);
+            background: #f7fbf4;
+            font-weight: 700;
+            box-shadow: 0 4px 10px rgba(23, 63, 24, .06);
+        }
+
+        .player-count button.active {
+            color: white;
+            background: linear-gradient(145deg, #286f24, #1b501a);
+            border-color: #1b501a;
+            box-shadow: 0 8px 18px rgba(40, 111, 36, .25);
+        }
+
+        .next-hole-card {
+            min-height: 142px;
+            padding: 22px 26px;
+            background:
+                radial-gradient(circle at 85% 50%, rgba(117,169,108,.18), transparent 36%),
+                rgba(253,254,249,.97);
+        }
+
+        .next-hole-label {
+            color: var(--forest-2);
+            font-size: 14px;
+            font-weight: 900;
+            letter-spacing: .18em;
+            text-transform: uppercase;
+        }
+
+        .next-hole-number {
+            min-width: 86px;
+            color: var(--forest);
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 76px;
+            line-height: 1;
+            text-align: center;
+        }
+
+        .voice-card {
+            top: 8px;
+            padding: 20px;
+            border-color: #9fc49a;
+            box-shadow: 0 15px 36px rgba(23,63,24,.20);
+        }
+
+        #voiceButton {
+            display: block;
+            width: min(100%, 420px);
+            min-height: 84px;
+            margin: 0 auto;
+            border: 0;
+            border-radius: 24px;
+            color: white;
+            background: linear-gradient(145deg, #2c7e28, #195119);
+            box-shadow: 0 14px 28px rgba(27, 80, 26, .30);
+            font-size: 19px;
+            letter-spacing: .01em;
+        }
+
+        #voiceButton.listening {
+            color: #6f1515;
+            background: #ffe7e4;
+            box-shadow: 0 0 0 4px rgba(196, 50, 42, .12);
+        }
+
+        #voiceStatus {
+            margin-top: 14px;
+            padding: 14px 16px;
+            border: 1px solid #c6d9c1;
+            border-radius: 16px;
+            background: #f2f8ef;
+        }
+
+        .toggle-row {
+            border-radius: 16px;
+            background: #f2f8ef;
+        }
+
+        .toggle-row input {
+            accent-color: var(--forest-2);
+        }
+
+        .table-wrap {
+            border: 1px solid #c6d8c1;
+            border-radius: 18px;
+            overflow: auto;
+        }
+
+        table {
+            overflow: hidden;
+            border-radius: 18px;
+        }
+
+        th {
+            color: var(--forest);
+            background: #e8f1e4;
+        }
+
+        th, td {
+            border-color: #cbdac7;
+        }
+
+        .player-name {
+            border-color: #b8cdb3;
+            border-radius: 12px;
+            color: var(--forest);
+            background: #fbfdf9;
+        }
+
+        .score-input {
+            min-height: 44px;
+            color: var(--forest);
+            font-weight: 800;
+        }
+
+        .subtotal {
+            color: var(--forest);
+            background: #edf4e9;
+        }
+
+        .total {
+            color: white;
+            background: var(--forest);
+        }
+
+        .actions {
+            margin-bottom: 20px;
+        }
+
+        .actions .action-button:first-child {
+            color: white;
+            background: linear-gradient(145deg, #2c7e28, #195119);
+        }
+
+        .history-item {
+            border-radius: 18px;
+            background: #f8fbf6;
+        }
+
+        .modal-card {
+            border: 1px solid #b9ceb4;
+            border-radius: 26px;
+            color: var(--ink);
+            background: #fbfdf8;
+        }
+
+        @media (max-width: 500px) {
+            body {
+                padding-left: 8px;
+                padding-right: 8px;
+            }
+
+            .hero {
+                min-height: 310px;
+                padding: 54px 22px 26px;
+            }
+
+            .hero h1 span,
+            .hero h1 strong {
+                font-size: 51px;
+            }
+
+            .card,
+            .scorecard-card {
+                padding: 18px 14px;
+                border-radius: 24px;
+            }
+
+            .next-hole-number {
+                font-size: 68px;
+            }
+        }
+
     </style>
 </head>
 
 <body>
     <main class="app">
-        <h1>Golf-tuloslaskuri <span style="font-size:14px;font-weight:normal;">v2.7.4</span></h1>
+        <header class="hero">
+            <div class="hero-badge">⛳ VOICE SCORING</div>
+            <h1><span>Golf Voice</span><strong>Scorecard AI</strong></h1>
+            <p class="hero-subtitle">Kirjaa golfkierros nopeasti puheella</p>
+            <p class="hero-signature">By Petri Suokas · Powered by AI</p>
+        </header>
 
-        <section class="card">
-            <h2 class="section-title">Pelaajien määrä</h2>
+        <section class="card setup-card">
+            <h2 class="section-title">KIERROKSEN ASETUKSET</h2>
+            <p class="section-help">Valitse kierroksella pelaavien määrä.</p>
 
             <div class="player-count" id="playerCountButtons">
                 <button type="button" data-count="1">1</button>
@@ -383,7 +689,7 @@
             </div>
         </section>
 
-        <section class="card next-hole-box">
+        <section class="card next-hole-box next-hole-card">
             <div>
                 <div class="next-hole-label">Seuraava reikä</div>
                 <div class="muted">Reikä vaihtuu onnistuneen kirjauksen jälkeen.</div>
@@ -392,7 +698,8 @@
             <div class="next-hole-number" id="nextHole">1</div>
         </section>
 
-        <section class="card voice-card" id="voiceCard">
+        <section class="card voice-card voice-command-card" id="voiceCard">
+            <h2 class="section-title">PUHEKIRJAUS</h2>
             <button
                 type="button"
                 class="action-button"
@@ -439,7 +746,9 @@
             </div>
         </section>
 
-        <section class="table-wrap">
+        <section class="card scorecard-card">
+            <h2 class="section-title">TULOSKORTTI</h2>
+            <div class="table-wrap">
             <table>
                 <thead>
                     <tr id="headerRow">
@@ -499,6 +808,7 @@
                     </tr>
                 </tfoot>
             </table>
+            </div>
         </section>
 
         <div class="actions">
