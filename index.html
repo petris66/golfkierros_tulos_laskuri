@@ -170,9 +170,17 @@
             background: transparent;
         }
 
-        .score-input:focus {
+        .score-input:focus,
+        .score-input.selected-score {
             outline: 2px solid #7a877b;
             background: white;
+        }
+
+        .manual-score-actions {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+            margin-top: 10px;
         }
 
         .subtotal {
@@ -362,7 +370,7 @@
 
 <body>
     <main class="app">
-        <h1>Golf-tuloslaskuri <span style="font-size:14px;font-weight:normal;">v2.7</span></h1>
+        <h1>Golf-tuloslaskuri <span style="font-size:14px;font-weight:normal;">v2.7.1</span></h1>
 
         <section class="card">
             <h2 class="section-title">Pelaajien määrä</h2>
@@ -411,6 +419,16 @@
                     id="announceStandings"
                     aria-label="Kerro pelitilanne reiän jälkeen"
                 >
+            </div>
+
+            <div class="manual-score-actions">
+                <button
+                    type="button"
+                    class="action-button"
+                    onclick="setDashForSelectedScore()"
+                >
+                    ➖ Merkitse viiva valittuun ruutuun
+                </button>
             </div>
 
             <div class="round-complete-actions" id="roundCompleteActions">
@@ -583,6 +601,7 @@
         let frontNineAnnounced = false;
         let pendingVoiceMessage = "";
         let announceStandings = false;
+        let selectedScoreInput = null;
 
         const tableBody = document.getElementById("tableBody");
         const voiceStatus = document.getElementById("voiceStatus");
@@ -629,6 +648,9 @@
             }
 
             document.querySelectorAll(".score-input").forEach(input => {
+                input.addEventListener("focus", () => selectScoreInput(input));
+                input.addEventListener("click", () => selectScoreInput(input));
+
                 input.addEventListener("input", () => {
                     normalizeManualScoreInput(input);
                     calculateScores();
@@ -710,6 +732,43 @@
             };
 
             voiceExample.innerHTML = examples[playerCount];
+        }
+
+        function selectScoreInput(input) {
+            document.querySelectorAll(".score-input").forEach(item => {
+                item.classList.remove("selected-score");
+            });
+
+            selectedScoreInput = input;
+            selectedScoreInput.classList.add("selected-score");
+        }
+
+        function setDashForSelectedScore() {
+            if (!selectedScoreInput) {
+                voiceStatus.textContent =
+                    "Valitse ensin pelaajan tulosruutu ja paina sitten viivapainiketta.";
+                speakMessage("Valitse ensin tulosruutu");
+                return;
+            }
+
+            selectedScoreInput.value = "-";
+            calculateScores();
+            saveState();
+            checkFrontNineCompletion();
+
+            const hole = selectedScoreInput.dataset.hole;
+            const playerClass = [...selectedScoreInput.classList]
+                .find(className => /^p[1-4]$/.test(className));
+            const player = playerClass ? Number(playerClass.slice(1)) : 1;
+            const playerName =
+                document.getElementById(`name${player}`).value.trim() ||
+                `P${player}`;
+
+            voiceStatus.innerHTML =
+                `<strong>Viiva merkitty ✅</strong><br>` +
+                `Reikä ${hole}, ${escapeHtml(playerName)}`;
+
+            speakMessage(`Viiva merkitty reiälle ${hole}`);
         }
 
         function normalizeScoreValue(value) {
@@ -870,7 +929,13 @@
             const tokens = [];
 
             words.forEach(word => {
-                if (word === "viiva") {
+                if (
+                    word.startsWith("viiv") ||
+                    word === "viva" ||
+                    word === "viia" ||
+                    word === "miinus" ||
+                    word === "rasti"
+                ) {
                     tokens.push("-");
                     return;
                 }
@@ -1197,6 +1262,7 @@
 
                 if (successfulResult) {
                     voiceStatus.innerHTML =
+                        `<strong>Kuulin:</strong> ${escapeHtml(heardText)}<br>` +
                         `<strong>Reikä ${successfulResult.hole} tallennettu ✅</strong><br>` +
                         successfulResult.addedScores.join(", ");
 
