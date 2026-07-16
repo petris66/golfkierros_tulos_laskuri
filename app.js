@@ -11,6 +11,7 @@
         let pendingVoiceMessage = "";
         let announceStandings = false;
         let selectedScoreInput = null;
+        let speechSynthesisPrimed = false;
 
         const tableBody = document.getElementById("tableBody");
         const voiceStatus = document.getElementById("voiceStatus");
@@ -653,7 +654,55 @@
             return parts.join(" ");
         }
 
+        function primeSpeechSynthesis() {
+            if (
+                speechSynthesisPrimed ||
+                !("speechSynthesis" in window)
+            ) {
+                return;
+            }
+
+            try {
+                const silentMessage =
+                    new SpeechSynthesisUtterance("\u00A0");
+
+                silentMessage.lang = "fi-FI";
+                silentMessage.volume = 0;
+                silentMessage.rate = 1;
+
+                window.speechSynthesis.speak(silentMessage);
+                speechSynthesisPrimed = true;
+            } catch (error) {
+                console.log("Äänikanavan alustaminen epäonnistui:", error);
+            }
+        }
+
+        function showSavedHoleInScorecard(hole) {
+            const row = document.querySelector(
+                `[data-hole-row="${hole}"]`
+            );
+
+            if (!row) {
+                return;
+            }
+
+            row.classList.add("recently-saved");
+
+            setTimeout(() => {
+                row.classList.remove("recently-saved");
+            }, 2200);
+
+            requestAnimationFrame(() => {
+                row.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center"
+                });
+            });
+        }
+
         function startVoiceInput() {
+            primeSpeechSynthesis();
+
             if (roundComplete) {
                 voiceStatus.textContent =
                     "Kierros on valmis. Tarkista tai tallenna kierros ennen uutta kirjausta.";
@@ -713,6 +762,10 @@
                         `<strong>Reikä ${successfulResult.hole} tallennettu ✅</strong><br>` +
                         successfulResult.addedScores.join(", ");
 
+                    showSavedHoleInScorecard(
+                        successfulResult.hole
+                    );
+
                     pendingVoiceMessage =
                         `Reikä ${successfulResult.hole} tallennettu`;
 
@@ -761,9 +814,7 @@
                     const message = pendingVoiceMessage;
                     pendingVoiceMessage = "";
 
-                    setTimeout(() => {
-                        speakMessage(message);
-                    }, 650);
+                    speakMessage(message);
                 }
             };
 
@@ -775,18 +826,38 @@
         }
 
         function speakMessage(text) {
-            if (!("speechSynthesis" in window)) {
+            if (!("speechSynthesis" in window) || !text) {
                 return;
             }
 
-            window.speechSynthesis.cancel();
+            const speak = () => {
+                try {
+                    window.speechSynthesis.cancel();
+                    window.speechSynthesis.resume();
 
-            const message = new SpeechSynthesisUtterance(text);
-            message.lang = "fi-FI";
-            message.rate = 0.9;
-            message.volume = 1;
+                    const message =
+                        new SpeechSynthesisUtterance(text);
 
-            window.speechSynthesis.speak(message);
+                    message.lang = "fi-FI";
+                    message.rate = 0.9;
+                    message.pitch = 1;
+                    message.volume = 1;
+
+                    window.speechSynthesis.speak(message);
+
+                    // iOS saattaa joskus jäädyttää puhesynteesin PWA-tilassa.
+                    setTimeout(() => {
+                        if (window.speechSynthesis.paused) {
+                            window.speechSynthesis.resume();
+                        }
+                    }, 250);
+                } catch (error) {
+                    console.log("Äänikuittaus epäonnistui:", error);
+                }
+            };
+
+            // Annetaan mikrofonikanavan vapautua ennen kuittausta.
+            setTimeout(speak, 850);
         }
 
         function updateNextHole() {
