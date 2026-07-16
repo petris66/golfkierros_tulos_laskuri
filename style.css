@@ -1,0 +1,657 @@
+:root {
+            --bg: #f3f5f2;
+            --card: #ffffff;
+            --border: #cfd5cf;
+            --soft: #e9eee8;
+            --strong: #dce5db;
+            --text: #1f2a22;
+            --danger: #fff0f0;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 12px;
+            font-family: Arial, sans-serif;
+            color: var(--text);
+            background: var(--bg);
+        }
+
+        .app {
+            max-width: 760px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin: 4px 0 14px;
+            text-align: center;
+            font-size: 24px;
+        }
+
+        .card {
+            margin-bottom: 12px;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--card);
+        }
+
+        .section-title {
+            margin: 0 0 10px;
+            font-size: 17px;
+        }
+
+        .player-count {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .player-count button,
+        .action-button {
+            min-height: 46px;
+            padding: 10px;
+            border: 1px solid #9da69e;
+            border-radius: 8px;
+            background: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .player-count button.active {
+            font-weight: bold;
+            background: var(--strong);
+            border-color: #6f7c70;
+        }
+
+        .next-hole-box {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .next-hole-label {
+            font-size: 15px;
+        }
+
+        .next-hole-number {
+            font-size: 34px;
+            font-weight: bold;
+        }
+
+        #voiceButton {
+            width: 100%;
+            min-height: 54px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        #voiceButton.listening {
+            background: var(--danger);
+        }
+
+        #voiceStatus {
+            margin-top: 10px;
+            padding: 10px;
+            min-height: 46px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #fafafa;
+            line-height: 1.4;
+        }
+
+        .example {
+            margin-top: 8px;
+            font-size: 13px;
+            color: #4b554d;
+            line-height: 1.4;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            border-radius: 10px;
+        }
+
+        table {
+            width: 100%;
+            min-width: 420px;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th,
+        td {
+            border: 1px solid var(--border);
+            padding: 7px 4px;
+            text-align: center;
+        }
+
+        th {
+            background: var(--soft);
+        }
+
+        .hole-cell {
+            width: 54px;
+            font-weight: bold;
+        }
+
+        .player-name {
+            width: 100%;
+            min-width: 66px;
+            padding: 7px 4px;
+            border: 1px solid #aeb6ae;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+            background: white;
+        }
+
+        .score-input {
+            width: 100%;
+            min-width: 54px;
+            padding: 7px 0;
+            border: none;
+            text-align: center;
+            font-size: 18px;
+            background: transparent;
+        }
+
+        .score-input:focus,
+        .score-input.selected-score {
+            outline: 2px solid #7a877b;
+            background: white;
+        }
+
+        .manual-score-actions {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .subtotal {
+            font-weight: bold;
+            background: #eef1ed;
+        }
+
+        .total {
+            font-weight: bold;
+            font-size: 16px;
+            background: #dde3dc;
+        }
+
+        .actions {
+            display: grid;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .muted {
+            color: #59625b;
+            font-size: 13px;
+        }
+
+        .hidden-player {
+            display: none;
+        }
+
+        @media (max-width: 500px) {
+            body {
+                padding: 8px;
+            }
+
+            h1 {
+                font-size: 21px;
+            }
+
+            th,
+            td {
+                padding: 6px 2px;
+            }
+
+            .player-name {
+                font-size: 13px;
+            }
+        }
+
+        .round-complete-actions { display: none; gap: 8px; margin-top: 10px; }
+        .round-complete-actions.visible { display: grid; }
+        .primary-button { font-weight: bold; background: var(--strong); border-color: #6f7c70; }
+        .modal-backdrop {
+            display: none; position: fixed; inset: 0; z-index: 1000;
+            padding: 18px; background: rgba(0,0,0,.45);
+            align-items: center; justify-content: center;
+        }
+        .modal-backdrop.visible { display: flex; }
+        .modal-card {
+            width: min(100%, 440px); padding: 18px; border-radius: 12px;
+            background: white; box-shadow: 0 12px 40px rgba(0,0,0,.25);
+        }
+        .modal-card h2 { margin: 0 0 10px; text-align: left; font-size: 21px; }
+        .modal-card p { margin: 0 0 14px; line-height: 1.5; }
+        .modal-actions { display: grid; gap: 8px; }
+        .saved-message { margin-top: 10px; font-weight: bold; }
+
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #fafafa;
+        }
+
+        .toggle-row label {
+            font-weight: bold;
+            line-height: 1.35;
+        }
+
+        .toggle-row input {
+            width: 24px;
+            height: 24px;
+            flex: 0 0 auto;
+        }
+
+        .voice-card {
+            position: sticky;
+            top: 8px;
+            z-index: 50;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.10);
+        }
+
+
+        .form-grid {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .form-grid label {
+            display: grid;
+            gap: 5px;
+            font-weight: bold;
+        }
+
+        .form-grid input,
+        .form-grid select,
+        .form-grid textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font: inherit;
+            background: white;
+        }
+
+        .form-grid textarea {
+            min-height: 76px;
+            resize: vertical;
+        }
+
+        .history-card {
+            display: none;
+            margin-top: 12px;
+        }
+
+        .history-card.visible {
+            display: block;
+        }
+
+        .history-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .history-item {
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            background: white;
+        }
+
+        .history-item h3 {
+            margin: 0 0 6px;
+            font-size: 17px;
+        }
+
+        .history-meta,
+        .history-totals {
+            margin: 4px 0;
+            line-height: 1.45;
+        }
+
+        .history-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .small-button {
+            min-height: 40px;
+            padding: 8px;
+            border: 1px solid #9da69e;
+            border-radius: 8px;
+            background: white;
+            font-size: 14px;
+        }
+
+        .danger-button {
+            background: #fff4f4;
+        }
+
+        .history-empty {
+            padding: 12px;
+            border: 1px dashed var(--border);
+            border-radius: 8px;
+            text-align: center;
+            color: #59625b;
+        }
+
+        /* --- Golf Voice Scorecard AI visual theme --- */
+        :root {
+            --forest: #173f18;
+            --forest-2: #286f24;
+            --leaf: #75a96c;
+            --mint: #eaf5e5;
+            --cream: #fbfcf7;
+            --gold: #f2d178;
+            --ink: #173019;
+            --line: #bfd2ba;
+            --shadow: 0 14px 34px rgba(22, 63, 24, 0.14);
+        }
+
+        body {
+            padding: 0 12px 32px;
+            color: var(--ink);
+            background:
+                linear-gradient(180deg, #173f18 0, #315f31 245px, rgba(214, 237, 204, .94) 600px),
+                repeating-linear-gradient(
+                    135deg,
+                    rgba(39, 111, 36, .06) 0,
+                    rgba(39, 111, 36, .06) 2px,
+                    transparent 2px,
+                    transparent 34px
+                );
+            background-attachment: fixed;
+        }
+
+        .app {
+            max-width: 760px;
+        }
+
+        .hero {
+            min-height: 330px;
+            padding: 58px 16px 30px;
+            color: white;
+            text-align: left;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 10px 18px;
+            border: 2px solid rgba(242, 209, 120, .58);
+            border-radius: 999px;
+            color: #7b5710;
+            background: #fff5cf;
+            box-shadow: 0 8px 22px rgba(0, 0, 0, .13);
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: .22em;
+        }
+
+        .hero h1 {
+            margin: 28px 0 12px;
+            text-align: left;
+            line-height: .96;
+            letter-spacing: -.035em;
+        }
+
+        .hero h1 span,
+        .hero h1 strong {
+            display: block;
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: clamp(43px, 12vw, 76px);
+        }
+
+        .hero h1 strong {
+            color: var(--gold);
+        }
+
+        .hero-subtitle {
+            margin: 22px 0 10px;
+            font-size: 18px;
+            color: rgba(255,255,255,.92);
+        }
+
+        .hero-signature {
+            margin: 0;
+            color: rgba(255,255,255,.62);
+            font-weight: 600;
+            letter-spacing: .06em;
+        }
+
+        .card,
+        .scorecard-card {
+            margin-bottom: 16px;
+            padding: 20px;
+            border: 1px solid rgba(158, 188, 151, .65);
+            border-radius: 28px;
+            background: rgba(253, 254, 249, .96);
+            box-shadow: var(--shadow);
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin: 0 0 16px;
+            color: var(--forest-2);
+            font-size: 14px;
+            font-weight: 900;
+            letter-spacing: .22em;
+        }
+
+        .section-title::after {
+            content: "";
+            height: 2px;
+            flex: 1;
+            background: linear-gradient(90deg, #a8c7a2, transparent);
+        }
+
+        .section-help {
+            margin: -7px 0 14px;
+            color: #557254;
+            font-size: 14px;
+        }
+
+        .player-count {
+            gap: 10px;
+        }
+
+        .player-count button,
+        .action-button,
+        .small-button {
+            border: 1px solid #afc6aa;
+            border-radius: 16px;
+            color: var(--ink);
+            background: #f7fbf4;
+            font-weight: 700;
+            box-shadow: 0 4px 10px rgba(23, 63, 24, .06);
+        }
+
+        .player-count button.active {
+            color: white;
+            background: linear-gradient(145deg, #286f24, #1b501a);
+            border-color: #1b501a;
+            box-shadow: 0 8px 18px rgba(40, 111, 36, .25);
+        }
+
+        .next-hole-card {
+            min-height: 142px;
+            padding: 22px 26px;
+            background:
+                radial-gradient(circle at 85% 50%, rgba(117,169,108,.18), transparent 36%),
+                rgba(253,254,249,.97);
+        }
+
+        .next-hole-label {
+            color: var(--forest-2);
+            font-size: 14px;
+            font-weight: 900;
+            letter-spacing: .18em;
+            text-transform: uppercase;
+        }
+
+        .next-hole-number {
+            min-width: 86px;
+            color: var(--forest);
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 76px;
+            line-height: 1;
+            text-align: center;
+        }
+
+        .voice-card {
+            top: 8px;
+            padding: 20px;
+            border-color: #9fc49a;
+            box-shadow: 0 15px 36px rgba(23,63,24,.20);
+        }
+
+        #voiceButton {
+            display: block;
+            width: min(100%, 420px);
+            min-height: 84px;
+            margin: 0 auto;
+            border: 0;
+            border-radius: 24px;
+            color: white;
+            background: linear-gradient(145deg, #2c7e28, #195119);
+            box-shadow: 0 14px 28px rgba(27, 80, 26, .30);
+            font-size: 19px;
+            letter-spacing: .01em;
+        }
+
+        #voiceButton.listening {
+            color: #6f1515;
+            background: #ffe7e4;
+            box-shadow: 0 0 0 4px rgba(196, 50, 42, .12);
+        }
+
+        #voiceStatus {
+            margin-top: 14px;
+            padding: 14px 16px;
+            border: 1px solid #c6d9c1;
+            border-radius: 16px;
+            background: #f2f8ef;
+        }
+
+        .toggle-row {
+            border-radius: 16px;
+            background: #f2f8ef;
+        }
+
+        .toggle-row input {
+            accent-color: var(--forest-2);
+        }
+
+        .table-wrap {
+            border: 1px solid #c6d8c1;
+            border-radius: 18px;
+            overflow: auto;
+        }
+
+        table {
+            overflow: hidden;
+            border-radius: 18px;
+        }
+
+        th {
+            color: var(--forest);
+            background: #e8f1e4;
+        }
+
+        th, td {
+            border-color: #cbdac7;
+        }
+
+        .player-name {
+            border-color: #b8cdb3;
+            border-radius: 12px;
+            color: var(--forest);
+            background: #fbfdf9;
+        }
+
+        .score-input {
+            min-height: 44px;
+            color: var(--forest);
+            font-weight: 800;
+        }
+
+        .subtotal {
+            color: var(--forest);
+            background: #edf4e9;
+        }
+
+        .total {
+            color: white;
+            background: var(--forest);
+        }
+
+        .actions {
+            margin-bottom: 20px;
+        }
+
+        .actions .action-button:first-child {
+            color: white;
+            background: linear-gradient(145deg, #2c7e28, #195119);
+        }
+
+        .history-item {
+            border-radius: 18px;
+            background: #f8fbf6;
+        }
+
+        .modal-card {
+            border: 1px solid #b9ceb4;
+            border-radius: 26px;
+            color: var(--ink);
+            background: #fbfdf8;
+        }
+
+        @media (max-width: 500px) {
+            body {
+                padding-left: 8px;
+                padding-right: 8px;
+            }
+
+            .hero {
+                min-height: 310px;
+                padding: 54px 22px 26px;
+            }
+
+            .hero h1 span,
+            .hero h1 strong {
+                font-size: 51px;
+            }
+
+            .card,
+            .scorecard-card {
+                padding: 18px 14px;
+                border-radius: 24px;
+            }
+
+            .next-hole-number {
+                font-size: 68px;
+            }
+        }
