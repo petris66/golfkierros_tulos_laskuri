@@ -339,7 +339,7 @@
 
 <body>
     <main class="app">
-        <h1>Golf-tuloslaskuri <span style="font-size:14px;font-weight:normal;">v2.5.1</span></h1>
+        <h1>Golf-tuloslaskuri <span style="font-size:14px;font-weight:normal;">v2.6</span></h1>
 
         <section class="card">
             <h2 class="section-title">Pelaajien määrä</h2>
@@ -547,6 +547,7 @@
         let nextHole = 1;
         let roundComplete = false;
         let frontNineAnnounced = false;
+        let pendingVoiceMessage = "";
 
         const tableBody = document.getElementById("tableBody");
         const voiceStatus = document.getElementById("voiceStatus");
@@ -592,6 +593,7 @@
 
             document.querySelectorAll(".score-input").forEach(input => {
                 input.addEventListener("input", () => {
+                    normalizeManualScoreInput(input);
                     calculateScores();
                     saveState();
                     checkFrontNineCompletion();
@@ -606,10 +608,9 @@
                 html += `
                     <td class="player-column" data-player="${player}">
                         <input
-                            type="number"
-                            min="1"
-                            max="20"
+                            type="text"
                             inputmode="numeric"
+                            maxlength="2"
                             class="score-input p${player}"
                             data-hole="${hole}"
                             aria-label="Pelaaja ${player}, reikä ${hole}"
@@ -665,8 +666,8 @@
 
         function updateVoiceExample() {
             const examples = {
-                1: "Esimerkki: <strong>yks viis</strong>",
-                2: "Esimerkki: <strong>yks viis neljä</strong>",
+                1: "Esimerkki: <strong>yks viis</strong> tai <strong>yks viiva</strong>",
+                2: "Esimerkki: <strong>yks viis neljä</strong> tai <strong>yks viis viiva</strong>",
                 3: "Esimerkki: <strong>yks viis neljä kuus</strong>",
                 4: "Esimerkki: <strong>yks viis neljä kuus viis</strong>"
             };
@@ -674,25 +675,71 @@
             voiceExample.innerHTML = examples[playerCount];
         }
 
+        function normalizeScoreValue(value) {
+            const cleaned = String(value || "").trim().toLowerCase();
+
+            if (cleaned === "-" || cleaned === "–" || cleaned === "—" || cleaned === "x") {
+                return "-";
+            }
+
+            const number = Number(cleaned);
+
+            if (Number.isFinite(number) && number >= 1 && number <= 20) {
+                return number;
+            }
+
+            return "";
+        }
+
+        function normalizeManualScoreInput(input) {
+            const normalized = normalizeScoreValue(input.value);
+
+            if (normalized === "-") {
+                input.value = "-";
+            } else if (normalized === "") {
+                input.value = "";
+            } else {
+                input.value = String(normalized);
+            }
+        }
+
+        function calculateNineResult(player, startHole, endHole) {
+            let total = 0;
+            let dnf = false;
+
+            document.querySelectorAll(`.p${player}`).forEach(input => {
+                const hole = Number(input.dataset.hole);
+
+                if (hole < startHole || hole > endHole) {
+                    return;
+                }
+
+                const value = normalizeScoreValue(input.value);
+
+                if (value === "-") {
+                    dnf = true;
+                } else if (typeof value === "number") {
+                    total += value;
+                }
+            });
+
+            return { total, dnf };
+        }
+
         function calculateScores() {
             for (let player = 1; player <= MAX_PLAYERS; player++) {
-                let front = 0;
-                let back = 0;
+                const front = calculateNineResult(player, 1, 9);
+                const back = calculateNineResult(player, 10, 18);
+                const totalDnf = front.dnf || back.dnf;
 
-                document.querySelectorAll(`.p${player}`).forEach(input => {
-                    const score = Number(input.value) || 0;
-                    const hole = Number(input.dataset.hole);
+                document.getElementById(`front${player}`).textContent =
+                    front.dnf ? "DNF" : front.total;
 
-                    if (hole <= 9) {
-                        front += score;
-                    } else {
-                        back += score;
-                    }
-                });
+                document.getElementById(`back${player}`).textContent =
+                    back.dnf ? "DNF" : back.total;
 
-                document.getElementById(`front${player}`).textContent = front;
-                document.getElementById(`back${player}`).textContent = back;
-                document.getElementById(`sum${player}`).textContent = front + back;
+                document.getElementById(`sum${player}`).textContent =
+                    totalDnf ? "DNF" : front.total + back.total;
             }
         }
 
@@ -754,23 +801,12 @@
         }
 
         function decodeCompactDigits(digits) {
-            /*
-                iPhone voi yhdistää puheen yhdeksi luvuksi:
-
-                2 pelaajaa:
-                "viis neljä"       -> "54"
-                "yks viis neljä"   -> "154"
-                "kymmenen viis neljä" -> "1054"
-            */
-
             const digitArray = digits.split("").map(Number);
 
-            // Pelkät tulokset nykyiselle seuraavalle reiälle.
             if (digits.length === playerCount) {
                 return digitArray;
             }
 
-            // Yksinumeroinen reikä 1–9 + pelaajien tulokset.
             if (digits.length === playerCount + 1) {
                 const hole = Number(digits.slice(0, 1));
                 const scores = digits.slice(1).split("").map(Number);
@@ -780,7 +816,6 @@
                 }
             }
 
-            // Kaksinumeroinen reikä 10–18 + pelaajien tulokset.
             if (digits.length === playerCount + 2) {
                 const hole = Number(digits.slice(0, 2));
                 const scores = digits.slice(2).split("").map(Number);
@@ -790,20 +825,23 @@
                 }
             }
 
-            // Jos merkkijono ei sovi yllä oleviin muotoihin,
-            // käsitellään se tavallisena kokonaislukuna.
             return [Number(digits)];
         }
 
-        function extractNumbers(spokenText) {
+        function extractVoiceTokens(spokenText) {
             const words = normalizeText(spokenText).split(" ");
-            const recognized = [];
+            const tokens = [];
 
             words.forEach(word => {
+                if (word === "viiva") {
+                    tokens.push("-");
+                    return;
+                }
+
                 const number = wordToNumber(word);
 
                 if (number !== null) {
-                    recognized.push({
+                    tokens.push({
                         raw: word,
                         number,
                         isDigits: /^\d+$/.test(word)
@@ -811,41 +849,40 @@
                 }
             });
 
-            if (recognized.length === 0) {
-                return [];
-            }
-
-            // Esimerkiksi "154" tai "54".
             if (
-                recognized.length === 1 &&
-                recognized[0].isDigits &&
-                recognized[0].raw.length >= 2
+                tokens.length === 1 &&
+                typeof tokens[0] === "object" &&
+                tokens[0].isDigits &&
+                tokens[0].raw.length >= 2
             ) {
-                return decodeCompactDigits(recognized[0].raw);
+                return decodeCompactDigits(tokens[0].raw);
             }
 
-            // Esimerkiksi "reikä 10 54".
             if (
-                recognized.length === 2 &&
-                recognized[0].number >= 1 &&
-                recognized[0].number <= 18 &&
-                recognized[1].isDigits &&
-                recognized[1].raw.length === playerCount
+                tokens.length === 2 &&
+                typeof tokens[0] === "object" &&
+                tokens[0].number >= 1 &&
+                tokens[0].number <= 18 &&
+                typeof tokens[1] === "object" &&
+                tokens[1].isDigits &&
+                tokens[1].raw.length === playerCount
             ) {
                 return [
-                    recognized[0].number,
-                    ...recognized[1].raw.split("").map(Number)
+                    tokens[0].number,
+                    ...tokens[1].raw.split("").map(Number)
                 ];
             }
 
-            return recognized.map(item => item.number);
+            return tokens.map(token =>
+                token === "-" ? "-" : token.number
+            );
         }
 
         function parseVoiceResults(spokenText) {
-            const numbers = extractNumbers(spokenText);
+            const tokens = extractVoiceTokens(spokenText);
 
-            if (numbers.length === 0) {
-                throw new Error("Numeroita ei tunnistettu.");
+            if (tokens.length === 0) {
+                throw new Error("Tuloksia ei tunnistettu.");
             }
 
             const expectedWithHole = playerCount + 1;
@@ -854,16 +891,16 @@
             let hole;
             let scores;
 
-            if (numbers.length === expectedWithHole) {
-                hole = numbers[0];
-                scores = numbers.slice(1);
-            } else if (numbers.length === expectedWithoutHole) {
+            if (tokens.length === expectedWithHole && typeof tokens[0] === "number") {
+                hole = tokens[0];
+                scores = tokens.slice(1);
+            } else if (tokens.length === expectedWithoutHole) {
                 hole = nextHole;
-                scores = numbers;
-            } else if (numbers.length < expectedWithoutHole) {
+                scores = tokens;
+            } else if (tokens.length < expectedWithoutHole) {
                 throw new Error("Tuloksia puuttuu.");
-            } else if (numbers.length > expectedWithHole) {
-                throw new Error("Liikaa numeroita.");
+            } else if (tokens.length > expectedWithHole) {
+                throw new Error("Liikaa tuloksia.");
             } else {
                 throw new Error(
                     `Sano ${playerCount} tulosta tai reiän numero ja ${playerCount} tulosta.`
@@ -879,8 +916,12 @@
             }
 
             scores.forEach(score => {
-                if (score < 1 || score > 20) {
-                    throw new Error("Tuloksen pitää olla 1–20.");
+                if (score === "-") {
+                    return;
+                }
+
+                if (typeof score !== "number" || score < 1 || score > 20) {
+                    throw new Error("Tuloksen pitää olla 1–20 tai viiva.");
                 }
             });
 
@@ -896,13 +937,15 @@
                     return;
                 }
 
-                input.value = score;
+                input.value = score === "-" ? "-" : String(score);
 
                 const playerName =
                     document.getElementById(`name${player}`).value.trim() ||
                     `P${player}`;
 
-                addedScores.push(`${playerName}: ${score}`);
+                addedScores.push(
+                    `${playerName}: ${score === "-" ? "viiva" : score}`
+                );
             });
 
             calculateScores();
@@ -983,7 +1026,8 @@
                         `<strong>Reikä ${successfulResult.hole} tallennettu ✅</strong><br>` +
                         successfulResult.addedScores.join(", ");
 
-                    speakConfirmation(successfulResult.hole);
+                    pendingVoiceMessage =
+                        `Reikä ${successfulResult.hole} tallennettu`;
                     checkFrontNineCompletion();
 
                     if (successfulResult.hole === 18) {
@@ -1016,6 +1060,15 @@
             recognition.onend = function() {
                 voiceButton.classList.remove("listening");
                 voiceButton.textContent = "🎤 Anna tulokset puheella";
+
+                if (pendingVoiceMessage) {
+                    const message = pendingVoiceMessage;
+                    pendingVoiceMessage = "";
+
+                    setTimeout(() => {
+                        speakMessage(message);
+                    }, 650);
+                }
             };
 
             recognition.start();
@@ -1247,8 +1300,11 @@
                     snapshot.scores[player].push(Number(input.value) || 0);
                 });
 
+                const totalText =
+                    document.getElementById(`sum${player}`).textContent;
+
                 snapshot.totals[player] =
-                    Number(document.getElementById(`sum${player}`).textContent) || 0;
+                    totalText === "DNF" ? "DNF" : Number(totalText) || 0;
             }
 
             return snapshot;
