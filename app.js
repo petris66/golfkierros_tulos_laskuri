@@ -851,7 +851,11 @@
                     const name = state.names?.[player - 1];
 
                     if (typeof name === "string") {
-                        document.getElementById(`name${player}`).value = name;
+                        const nameInput =
+                            document.getElementById(`name${player}`);
+
+                        nameInput.value =
+                            /^P[1-4]$/i.test(name.trim()) ? "" : name;
                     }
 
                     const scores = state.scores?.[player] || [];
@@ -1394,6 +1398,15 @@
         });
 
         document.querySelectorAll(".player-name").forEach(input => {
+            input.addEventListener("focus", () => {
+                const genericName = /^P[1-4]$/i.test(input.value.trim());
+
+                if (genericName) {
+                    input.value = "";
+                    saveState();
+                }
+            });
+
             input.addEventListener("input", saveState);
         });
 
