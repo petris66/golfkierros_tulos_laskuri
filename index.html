@@ -238,6 +238,29 @@
         .modal-actions { display: grid; gap: 8px; }
         .saved-message { margin-top: 10px; font-weight: bold; }
 
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #fafafa;
+        }
+
+        .toggle-row label {
+            font-weight: bold;
+            line-height: 1.35;
+        }
+
+        .toggle-row input {
+            width: 24px;
+            height: 24px;
+            flex: 0 0 auto;
+        }
+
         .voice-card {
             position: sticky;
             top: 8px;
@@ -339,7 +362,7 @@
 
 <body>
     <main class="app">
-        <h1>Golf-tuloslaskuri <span style="font-size:14px;font-weight:normal;">v2.6</span></h1>
+        <h1>Golf-tuloslaskuri <span style="font-size:14px;font-weight:normal;">v2.7</span></h1>
 
         <section class="card">
             <h2 class="section-title">Pelaajien määrä</h2>
@@ -377,6 +400,17 @@
 
             <div class="example" id="voiceExample">
                 Esimerkki yhdellä pelaajalla: <strong>yks viis</strong>
+            </div>
+
+            <div class="toggle-row">
+                <label for="announceStandings">
+                    🔊 Kerro pelitilanne reiän jälkeen
+                </label>
+                <input
+                    type="checkbox"
+                    id="announceStandings"
+                    aria-label="Kerro pelitilanne reiän jälkeen"
+                >
             </div>
 
             <div class="round-complete-actions" id="roundCompleteActions">
@@ -548,6 +582,7 @@
         let roundComplete = false;
         let frontNineAnnounced = false;
         let pendingVoiceMessage = "";
+        let announceStandings = false;
 
         const tableBody = document.getElementById("tableBody");
         const voiceStatus = document.getElementById("voiceStatus");
@@ -567,6 +602,8 @@
         const historyCount = document.getElementById("historyCount");
         const deleteAllRoundsButton =
             document.getElementById("deleteAllRoundsButton");
+        const announceStandingsInput =
+            document.getElementById("announceStandings");
 
         function buildScoreTable() {
             tableBody.innerHTML = "";
@@ -967,6 +1004,143 @@
             };
         }
 
+
+        function getPlayedHoleCount() {
+            let lastPlayedHole = 0;
+
+            for (let hole = 1; hole <= 18; hole++) {
+                let complete = true;
+
+                for (let player = 1; player <= playerCount; player++) {
+                    const input = document.querySelector(
+                        `.p${player}[data-hole="${hole}"]`
+                    );
+
+                    if (!input || input.value === "") {
+                        complete = false;
+                        break;
+                    }
+                }
+
+                if (complete) {
+                    lastPlayedHole = hole;
+                } else {
+                    break;
+                }
+            }
+
+            return lastPlayedHole;
+        }
+
+        function getStandingsData() {
+            const playedHoles = getPlayedHoleCount();
+            const activePlayers = [];
+            const dnfPlayers = [];
+
+            for (let player = 1; player <= playerCount; player++) {
+                const name =
+                    document.getElementById(`name${player}`).value.trim() ||
+                    `P${player}`;
+
+                let total = 0;
+                let dnf = false;
+
+                for (let hole = 1; hole <= playedHoles; hole++) {
+                    const input = document.querySelector(
+                        `.p${player}[data-hole="${hole}"]`
+                    );
+                    const value = normalizeScoreValue(input?.value);
+
+                    if (value === "-") {
+                        dnf = true;
+                        break;
+                    }
+
+                    if (typeof value === "number") {
+                        total += value;
+                    }
+                }
+
+                if (dnf) {
+                    dnfPlayers.push({ name });
+                } else {
+                    activePlayers.push({ name, total });
+                }
+            }
+
+            activePlayers.sort((a, b) => a.total - b.total);
+
+            return {
+                playedHoles,
+                activePlayers,
+                dnfPlayers
+            };
+        }
+
+        function buildStandingsMessage() {
+            const { playedHoles, activePlayers, dnfPlayers } = getStandingsData();
+
+            if (playedHoles === 0 || playerCount < 2) {
+                return "";
+            }
+
+            const parts = [];
+
+            if (activePlayers.length === 0) {
+                parts.push("Kenelläkään ei ole enää lyöntipelitulosta.");
+            } else {
+                const bestScore = activePlayers[0].total;
+                const leaders = activePlayers.filter(
+                    player => player.total === bestScore
+                );
+                const followers = activePlayers.filter(
+                    player => player.total > bestScore
+                );
+
+                if (leaders.length === activePlayers.length) {
+                    parts.push("Kaikki pelaajat ovat tasoissa.");
+                } else if (leaders.length > 1) {
+                    parts.push(
+                        `${leaders.map(player => player.name).join(" ja ")} ovat tasoissa johdossa.`
+                    );
+
+                    if (followers.length > 0) {
+                        const followerText = followers.map(player => {
+                            const difference = player.total - bestScore;
+                            return `${player.name} on ${difference} ${difference === 1 ? "lyönnin" : "lyöntiä"} perässä`;
+                        }).join(". ");
+
+                        parts.push(followerText + ".");
+                    }
+                } else {
+                    const leader = leaders[0];
+                    const comparison = followers.map(player => {
+                        const difference = player.total - leader.total;
+                        return `${player.name}a ${difference} ${difference === 1 ? "lyönnillä" : "lyönnillä"}`;
+                    });
+
+                    if (comparison.length === 1) {
+                        parts.push(
+                            `${leader.name} johtaa ${comparison[0]}.`
+                        );
+                    } else {
+                        const last = comparison.pop();
+                        parts.push(
+                            `${leader.name} johtaa ${comparison.join(", ")} ja ${last}.`
+                        );
+                    }
+                }
+            }
+
+            dnfPlayers.forEach(player => {
+                parts.push(
+                    `${player.name}lla ei ole enää lyöntipelitulosta.`
+                );
+            });
+
+            return parts.join(" ");
+        }
+
         function startVoiceInput() {
             if (roundComplete) {
                 voiceStatus.textContent =
@@ -1028,6 +1202,15 @@
 
                     pendingVoiceMessage =
                         `Reikä ${successfulResult.hole} tallennettu`;
+
+                    if (announceStandings) {
+                        const standingsMessage = buildStandingsMessage();
+
+                        if (standingsMessage) {
+                            pendingVoiceMessage += `. ${standingsMessage}`;
+                        }
+                    }
+
                     checkFrontNineCompletion();
 
                     if (successfulResult.hole === 18) {
@@ -1112,6 +1295,7 @@
                 nextHole,
                 roundComplete,
                 frontNineAnnounced,
+                announceStandings,
                 names: [],
                 scores: {}
             };
@@ -1147,6 +1331,8 @@
                 nextHole = Number(state.nextHole) || 1;
                 roundComplete = Boolean(state.roundComplete);
                 frontNineAnnounced = Boolean(state.frontNineAnnounced);
+                announceStandings = Boolean(state.announceStandings);
+                announceStandingsInput.checked = announceStandings;
 
                 for (let player = 1; player <= MAX_PLAYERS; player++) {
                     const name = state.names?.[player - 1];
@@ -1696,6 +1882,11 @@
 
         document.querySelectorAll(".player-name").forEach(input => {
             input.addEventListener("input", saveState);
+        });
+
+        announceStandingsInput.addEventListener("change", () => {
+            announceStandings = announceStandingsInput.checked;
+            saveState();
         });
 
         buildScoreTable();
