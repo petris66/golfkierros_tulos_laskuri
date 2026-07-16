@@ -684,6 +684,76 @@
             return parts.join(" ");
         }
 
+        function getFinalRoundResults() {
+            const finished = [];
+            const dnf = [];
+
+            for (let player = 1; player <= playerCount; player++) {
+                const name =
+                    document.getElementById(`name${player}`).value.trim() ||
+                    `P${player}`;
+
+                const totalText =
+                    document.getElementById(`sum${player}`).textContent;
+
+                if (totalText === "DNF") {
+                    dnf.push(name);
+                } else {
+                    finished.push({
+                        name,
+                        total: Number(totalText) || 0
+                    });
+                }
+            }
+
+            finished.sort((a, b) => a.total - b.total);
+
+            return { finished, dnf };
+        }
+
+        function buildWinnerMessage() {
+            if (playerCount < 2) {
+                const { finished } = getFinalRoundResults();
+
+                if (finished.length === 1) {
+                    return `Kierroksen tulos oli ${finished[0].total} lyöntiä.`;
+                }
+
+                return "Kierros päättyi ilman lyöntipelitulosta.";
+            }
+
+            const { finished, dnf } = getFinalRoundResults();
+
+            if (finished.length === 0) {
+                return "Kierroksella ei saatu lyöntipelitulosta.";
+            }
+
+            const bestScore = finished[0].total;
+            const winners = finished.filter(
+                player => player.total === bestScore
+            );
+
+            let message;
+
+            if (winners.length === 1) {
+                message =
+                    `Kierroksen voitti ${winners[0].name} tuloksella ${bestScore} lyöntiä.`;
+            } else {
+                const winnerNames = winners
+                    .map(player => player.name)
+                    .join(" ja ");
+
+                message =
+                    `Kierros päättyi tasan. ${winnerNames} pelasivat tuloksen ${bestScore} lyöntiä.`;
+            }
+
+            if (dnf.length > 0) {
+                message += ` ${dnf.join(" ja ")} eivät saaneet lyöntipelitulosta.`;
+            }
+
+            return message;
+        }
+
         function primeSpeechSynthesis() {
             if (
                 speechSynthesisPrimed ||
@@ -707,6 +777,30 @@
             }
         }
 
+        function scrollElementBelowVoiceCard(element, extraSpace = 14) {
+            if (!element) {
+                return;
+            }
+
+            const voiceCard = document.getElementById("voiceCard");
+            const stickyHeight = voiceCard
+                ? voiceCard.getBoundingClientRect().height
+                : 0;
+
+            const elementTop =
+                window.scrollY + element.getBoundingClientRect().top;
+
+            const targetTop = Math.max(
+                0,
+                elementTop - stickyHeight - extraSpace
+            );
+
+            window.scrollTo({
+                top: targetTop,
+                behavior: "smooth"
+            });
+        }
+
         function showSavedHoleInScorecard(hole) {
             const row = document.querySelector(
                 `[data-hole-row="${hole}"]`
@@ -723,10 +817,7 @@
             }, 2200);
 
             requestAnimationFrame(() => {
-                row.scrollIntoView({
-                    behavior: "smooth",
-                    block: "center"
-                });
+                scrollElementBelowVoiceCard(row, 18);
             });
         }
 
@@ -810,7 +901,15 @@
                     checkFrontNineCompletion();
 
                     if (successfulResult.hole === 18) {
-                        setTimeout(showRoundCompleteModal, 450);
+                        const winnerMessage = buildWinnerMessage();
+
+                        if (winnerMessage) {
+                            pendingVoiceMessage += `. ${winnerMessage}`;
+                            voiceStatus.innerHTML +=
+                                `<br><strong>${escapeHtml(winnerMessage)}</strong>`;
+                        }
+
+                        setTimeout(showRoundCompleteModal, 1100);
                     }
                 } else {
                     voiceStatus.innerHTML =
@@ -1004,13 +1103,26 @@
                     document.getElementById(`name${player}`).value.trim() ||
                     `P${player}`;
 
-                const total =
-                    Number(document.getElementById(`front${player}`).textContent) || 0;
+                const totalText =
+                    document.getElementById(`front${player}`).textContent;
 
-                parts.push(`${name} ${total}`);
+                parts.push({
+                    name,
+                    result: totalText
+                });
             }
 
             return parts;
+        }
+
+        function buildFrontNineSpeech(summary) {
+            return summary.map(item => {
+                if (item.result === "DNF") {
+                    return `${item.name}, ei lyöntipelitulosta`;
+                }
+
+                return `${item.name} ${item.result} lyöntiä`;
+            }).join(". ");
         }
 
         function checkFrontNineCompletion() {
@@ -1022,25 +1134,31 @@
             saveState();
 
             const summary = getFrontNineSummary();
+            const summaryText = summary.map(item =>
+                item.result === "DNF"
+                    ? `${escapeHtml(item.name)}: DNF`
+                    : `${escapeHtml(item.name)}: ${item.result}`
+            ).join(", ");
 
             voiceStatus.innerHTML =
                 "<strong>Etuysi pelattu ✅</strong><br>" +
-                summary.map(escapeHtml).join(", ");
+                summaryText;
 
-            speakMessage(
-                "Etuysi pelattu. " +
-                summary.join(", ")
-            );
+            const frontNineSpeech =
+                `Etuysi pelattu. ${buildFrontNineSpeech(summary)}`;
+
+            if (pendingVoiceMessage) {
+                pendingVoiceMessage += `. ${frontNineSpeech}`;
+            } else {
+                speakMessage(frontNineSpeech);
+            }
 
             const holeTenRow = document.querySelector('[data-hole-row="10"]');
 
             if (holeTenRow) {
                 setTimeout(() => {
-                    holeTenRow.scrollIntoView({
-                        behavior: "smooth",
-                        block: "start"
-                    });
-                }, 900);
+                    scrollElementBelowVoiceCard(holeTenRow, 18);
+                }, 1050);
             }
         }
 
@@ -1101,7 +1219,11 @@
                 snapshot.scores[player] = [];
 
                 document.querySelectorAll(`.p${player}`).forEach(input => {
-                    snapshot.scores[player].push(Number(input.value) || 0);
+                    const value = normalizeScoreValue(input.value);
+
+                    snapshot.scores[player].push(
+                        value === "-" ? "-" : (value || 0)
+                    );
                 });
 
                 const totalText =

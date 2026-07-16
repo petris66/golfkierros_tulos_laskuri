@@ -671,3 +671,15 @@
                 box-shadow: inset 0 0 0 0 transparent;
             }
         }
+
+
+        /* v3.5.0: jätetään tallennettu reikä näkyviin puhekortin alapuolelle */
+        #tableBody tr[data-hole-row] {
+            scroll-margin-top: 360px;
+        }
+
+        @media (max-width: 500px) {
+            #tableBody tr[data-hole-row] {
+                scroll-margin-top: 390px;
+            }
+        }
