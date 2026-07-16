@@ -590,6 +590,23 @@
             };
         }
 
+        function differenceInFinnishAdessive(number) {
+            const words = {
+                1: "yhdellä",
+                2: "kahdella",
+                3: "kolmella",
+                4: "neljällä",
+                5: "viidellä",
+                6: "kuudella",
+                7: "seitsemällä",
+                8: "kahdeksalla",
+                9: "yhdeksällä",
+                10: "kymmenellä"
+            };
+
+            return words[number] || `${number}:llä`;
+        }
+
         function buildStandingsMessage() {
             const { playedHoles, activePlayers, dnfPlayers } = getStandingsData();
 
@@ -620,7 +637,20 @@
                     if (followers.length > 0) {
                         const followerText = followers.map(player => {
                             const difference = player.total - bestScore;
-                            return `${player.name} on ${difference} ${difference === 1 ? "lyönnin" : "lyöntiä"} perässä`;
+                            const differenceText = {
+                                1: "yhden",
+                                2: "kahden",
+                                3: "kolmen",
+                                4: "neljän",
+                                5: "viiden",
+                                6: "kuuden",
+                                7: "seitsemän",
+                                8: "kahdeksan",
+                                9: "yhdeksän",
+                                10: "kymmenen"
+                            }[difference] || String(difference);
+
+                            return `${player.name} on ${differenceText} ${difference === 1 ? "lyönnin" : "lyöntiä"} perässä`;
                         }).join(". ");
 
                         parts.push(followerText + ".");
@@ -629,7 +659,7 @@
                     const leader = leaders[0];
                     const comparison = followers.map(player => {
                         const difference = player.total - leader.total;
-                        return `${player.name}a ${difference} ${difference === 1 ? "lyönnillä" : "lyönnillä"}`;
+                        return `${player.name}a ${differenceInFinnishAdessive(difference)} lyönnillä`;
                     });
 
                     if (comparison.length === 1) {
