@@ -879,3 +879,126 @@ table {
     cursor: wait;
     opacity: 0.72;
 }
+
+
+/* --- v3.7.1: Safari-, Edge- ja Chrome-mobiilin responsiivinen hienosäätö --- */
+html {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+body,
+.app,
+.card,
+.scorecard-card,
+.table-wrap {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+}
+
+body {
+    overflow-x: hidden;
+}
+
+.app {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+}
+
+.scorecard-card {
+    overflow: hidden;
+}
+
+.table-wrap {
+    display: block;
+    overflow-x: hidden;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table-wrap table {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0 !important;
+    table-layout: fixed;
+}
+
+.table-wrap th,
+.table-wrap td {
+    min-width: 0;
+    max-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.table-wrap .hole-cell {
+    width: clamp(38px, 11%, 48px);
+    max-width: none;
+}
+
+.player-name,
+.score-input {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.player-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+    .scorecard-card {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    .table-wrap th,
+    .table-wrap td {
+        padding-left: 1px;
+        padding-right: 1px;
+    }
+
+    .table-wrap .player-name {
+        padding-left: 1px;
+        padding-right: 1px;
+        font-size: clamp(9px, 2.8vw, 12px);
+    }
+
+    .table-wrap .score-input {
+        font-size: clamp(14px, 4.2vw, 18px);
+    }
+}
+
+@media (max-width: 390px) {
+    body {
+        padding-left: 6px;
+        padding-right: 6px;
+    }
+
+    .round-active .scorecard-card {
+        padding-left: 4px;
+        padding-right: 4px;
+    }
+
+    .round-active .scorecard-card .section-title {
+        letter-spacing: .12em;
+    }
+
+    .round-active th,
+    .round-active td {
+        font-size: 10.5px;
+    }
+
+    .round-active .player-name {
+        font-size: 9.5px;
+    }
+}
