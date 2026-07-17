@@ -1457,102 +1457,6 @@
             );
         }
 
-        function getRoundShareResults(round) {
-            const finished = [];
-            const dnf = [];
-
-            round.names.forEach((name, index) => {
-                const player = index + 1;
-                const total = round.totals[player];
-
-                if (total === "DNF") {
-                    dnf.push(name);
-                } else {
-                    finished.push({
-                        name,
-                        total: Number(total) || 0
-                    });
-                }
-            });
-
-            finished.sort((a, b) => a.total - b.total);
-
-            return { finished, dnf };
-        }
-
-        function buildShareWinnerSummary(round) {
-            const { finished, dnf } = getRoundShareResults(round);
-
-            if (round.names.length === 1) {
-                if (finished.length === 1) {
-                    return {
-                        title: "KIERROKSEN TULOS",
-                        text: `${finished[0].name} pelasi ${finished[0].total} lyöntiä.`,
-                        footnote: ""
-                    };
-                }
-
-                return {
-                    title: "KIERROKSEN TULOS",
-                    text: "Kierros päättyi ilman lyöntipelitulosta.",
-                    footnote: ""
-                };
-            }
-
-            if (finished.length === 0) {
-                return {
-                    title: "KIERROKSEN TULOS",
-                    text: "Kierroksella ei saatu lyöntipelitulosta.",
-                    footnote: ""
-                };
-            }
-
-            const bestScore = finished[0].total;
-            const winners = finished.filter(
-                player => player.total === bestScore
-            );
-
-            if (winners.length === 1) {
-                const runnerUp = finished.find(
-                    player => player.total > bestScore
-                );
-                const margin = runnerUp
-                    ? runnerUp.total - bestScore
-                    : 0;
-
-                let text =
-                    `${winners[0].name} voitti tuloksella ${bestScore} lyöntiä.`;
-
-                if (margin > 0) {
-                    text += ` Voittomarginaali oli ${margin} ${
-                        margin === 1 ? "lyönti" : "lyöntiä"
-                    }.`;
-                }
-
-                if (dnf.length > 0) {
-                    text += ` ${dnf.join(" ja ")}: DNF.`;
-                }
-
-                return {
-                    title: "🏆 VOITTAJA",
-                    text,
-                    footnote: ""
-                };
-            }
-
-            const winnerNames = winners
-                .map(player => player.name)
-                .join(" ja ");
-
-            return {
-                title: "🤝 TASATULOS",
-                text:
-                    `${winnerNames} pelasivat tuloksen ${bestScore} lyöntiä.`,
-                footnote:
-                    "Tasoituksia ei ole huomioitu. Mahdollinen tasoituksellinen voittaja määräytyy pelin sääntöjen mukaan."
-            };
-        }
-
         function roundedRectPath(context, x, y, width, height, radius) {
             const r = Math.min(radius, width / 2, height / 2);
 
@@ -1668,7 +1572,7 @@
         async function createVerticalScorecardCanvas(round) {
             const canvas = document.createElement("canvas");
             canvas.width = 1080;
-            canvas.height = 1920;
+            canvas.height = 1760;
 
             const context = canvas.getContext("2d");
             const width = canvas.width;
@@ -2049,57 +1953,6 @@
 
             context.restore();
 
-            const winner = buildShareWinnerSummary(round);
-            const winnerTop = tableTop + tableHeight + 32;
-            const winnerHeight = winner.footnote ? 172 : 126;
-
-            fillRoundedRect(
-                context,
-                76,
-                winnerTop,
-                width - 152,
-                winnerHeight,
-                24,
-                winner.title.includes("VOITTAJA")
-                    ? "#fff5cf"
-                    : mint
-            );
-
-            context.fillStyle = forest;
-            context.font = "800 24px Arial";
-            context.textAlign = "left";
-            context.fillText(
-                winner.title,
-                104,
-                winnerTop + 38
-            );
-
-            context.fillStyle = ink;
-            context.font = "700 24px Arial";
-            drawWrappedText(
-                context,
-                winner.text,
-                104,
-                winnerTop + 74,
-                width - 208,
-                30,
-                2
-            );
-
-            if (winner.footnote) {
-                context.fillStyle = "#5c695d";
-                context.font = "400 18px Arial";
-                drawWrappedText(
-                    context,
-                    winner.footnote,
-                    104,
-                    winnerTop + 132,
-                    width - 208,
-                    23,
-                    2
-                );
-            }
-
             context.fillStyle = "#607262";
             context.font = "600 18px Arial";
             context.textAlign = "center";
@@ -2135,21 +1988,13 @@
         }
 
         function buildShareText(round) {
-            const winner = buildShareWinnerSummary(round);
-            const lines = [
+            return [
                 "Golf Voice Scorecard AI",
                 "Petri Suokas · AI Golf Apps",
                 `${round.course || "Kenttä nimeämättä"} – ${formatDate(round.date)}`,
                 round.gameFormat || "Lyöntipeli",
-                "",
-                `${winner.title.replace(/[🏆🤝]/g, "").trim()}: ${winner.text}`
-            ];
-
-            if (winner.footnote) {
-                lines.push(winner.footnote);
-            }
-
-            return lines.join("\n");
+                "Tuloskortti liitteenä."
+            ].join("\n");
         }
 
         async function shareRound(roundId) {

@@ -115,3 +115,11 @@ Poista vanha kotinäytön kuvake ja lisää sovellus Safari-valikosta uudelleen,
 - Korjattu iOS Safarin automaattinen zoomaus, joka saattoi jäädä päälle, kun pelaajan nimeä muokattiin kierroksen aikana.
 - Pelaajan nimi- ja tuloskentät käyttävät mobiilissa vähintään 16 px fonttikokoa, jolloin Safari ei muuta sivun mittakaavaa kentän fokusoinnin yhteydessä.
 - Sovelluksen muu toiminnallisuus ja v3.7.2-kuvakkeet säilyvät ennallaan.
+
+
+## v3.7.4 – Neutral shared scorecard
+
+- Jaettavasta PNG-tuloskortista poistettiin voittaja- ja tasatulososio.
+- Jaettava kuva sisältää nyt vain kierroksen tiedot ja varsinaisen tuloskortin.
+- Sovelluksen kierroksen aikainen voittajan ilmoitus säilyy ennallaan.
+- Jakokuvan korkeutta tiivistettiin poistuneen yhteenveto-osion verran.
