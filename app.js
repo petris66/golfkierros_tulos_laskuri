@@ -17,6 +17,8 @@
         const voiceStatus = document.getElementById("voiceStatus");
         const voiceButton = document.getElementById("voiceButton");
         const nextHoleElement = document.getElementById("nextHole");
+        const compactNextHoleElement =
+            document.getElementById("compactNextHole");
         const roundCompleteModal = document.getElementById("roundCompleteModal");
         const roundCompleteActions = document.getElementById("roundCompleteActions");
         const savedMessage = document.getElementById("savedMessage");
@@ -64,6 +66,7 @@
                     normalizeManualScoreInput(input);
                     calculateScores();
                     saveState();
+                    updateRoundLayout();
                     checkFrontNineCompletion();
                 });
             });
@@ -93,6 +96,7 @@
         function buildSubtotalRow(label, prefix) {
             const row = document.createElement("tr");
             row.className = "subtotal";
+            row.dataset.nine = prefix === "front" ? "front" : "back";
 
             let cells = `<td>${label}</td>`;
 
@@ -496,6 +500,7 @@
 
             updateNextHole();
             updateRoundCompleteState();
+            updateRoundLayout();
             saveState();
 
             return {
@@ -975,6 +980,33 @@
 
         function updateNextHole() {
             nextHoleElement.textContent = nextHole;
+            compactNextHoleElement.textContent = nextHole;
+        }
+
+        function updateRoundLayout() {
+            const playedHoles = getPlayedHoleCount();
+            const roundStarted = playedHoles > 0 || roundComplete;
+            const showBackNine = nextHole >= 10 || roundComplete;
+
+            document.body.classList.toggle("round-active", roundStarted);
+            document.body.classList.toggle("show-back-nine", showBackNine);
+
+            document.querySelectorAll("[data-hole-row]").forEach(row => {
+                const hole = Number(row.dataset.holeRow);
+                const shouldShow = showBackNine
+                    ? hole >= 10
+                    : hole <= 9;
+
+                row.classList.toggle("nine-hidden", !shouldShow);
+            });
+
+            document.querySelectorAll(".subtotal").forEach(row => {
+                const shouldShow = showBackNine
+                    ? row.dataset.nine === "back"
+                    : row.dataset.nine === "front";
+
+                row.classList.toggle("nine-hidden", !shouldShow);
+            });
         }
 
         function escapeHtml(text) {
@@ -1018,6 +1050,7 @@
             if (!raw) {
                 setPlayerCount(1);
                 updateNextHole();
+                updateRoundLayout();
                 return;
             }
 
@@ -1053,10 +1086,12 @@
                 updateNextHole();
                 calculateScores();
                 updateRoundCompleteState();
+                updateRoundLayout();
             } catch (error) {
                 localStorage.removeItem(STORAGE_KEY);
                 setPlayerCount(1);
                 updateNextHole();
+                updateRoundLayout();
             }
         }
 
@@ -1115,6 +1150,7 @@
             }
 
             frontNineAnnounced = true;
+            updateRoundLayout();
             saveState();
 
             const summary = getFrontNineSummary();
@@ -1582,13 +1618,27 @@
             nextHole = 1;
             roundComplete = false;
             frontNineAnnounced = false;
+            selectedScoreInput = null;
+            document.querySelectorAll(".selected-score").forEach(input => {
+                input.classList.remove("selected-score");
+            });
+
             updateNextHole();
             updateRoundCompleteState();
             calculateScores();
+            updateRoundLayout();
             saveState();
 
             voiceStatus.textContent = "Uusi kierros aloitettu.";
             speakMessage("Uusi kierros aloitettu");
+
+            requestAnimationFrame(() => {
+                window.scrollTo({
+                    top: 0,
+                    left: 0,
+                    behavior: "smooth"
+                });
+            });
         }
 
         document.querySelectorAll("#playerCountButtons button").forEach(button => {
@@ -1618,6 +1668,7 @@
         buildScoreTable();
         loadState();
         updateRoundCompleteState();
+        updateRoundLayout();
         prepareRoundMetadataForm();
         renderHistory();
         processResultsFromUrl();
