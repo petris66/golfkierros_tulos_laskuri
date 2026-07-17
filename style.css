@@ -872,3 +872,10 @@ table {
         font-size: 11px;
     }
 }
+
+
+/* v3.7.0: jakokortin luomisen tila */
+.history-actions button:disabled {
+    cursor: wait;
+    opacity: 0.72;
+}

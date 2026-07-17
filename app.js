@@ -1432,51 +1432,712 @@
             });
         }
 
-        function buildShareText(round) {
-            const lines = [
-                "Golfkierros",
-                `${round.course || "Kenttä nimeämättä"} – ${formatDate(round.date)}`,
-                round.gameFormat || "",
-                ""
+        function getShareScoreValue(value) {
+            const normalized = normalizeScoreValue(value);
+
+            if (normalized === "-") {
+                return "-";
+            }
+
+            return normalized || "";
+        }
+
+        function calculateSharedNine(scores, startIndex, endIndex) {
+            const values = scores
+                .slice(startIndex, endIndex)
+                .map(getShareScoreValue);
+
+            if (values.some(value => value === "-")) {
+                return "DNF";
+            }
+
+            return values.reduce(
+                (sum, value) => sum + (Number(value) || 0),
+                0
+            );
+        }
+
+        function getRoundShareResults(round) {
+            const finished = [];
+            const dnf = [];
+
+            round.names.forEach((name, index) => {
+                const player = index + 1;
+                const total = round.totals[player];
+
+                if (total === "DNF") {
+                    dnf.push(name);
+                } else {
+                    finished.push({
+                        name,
+                        total: Number(total) || 0
+                    });
+                }
+            });
+
+            finished.sort((a, b) => a.total - b.total);
+
+            return { finished, dnf };
+        }
+
+        function buildShareWinnerSummary(round) {
+            const { finished, dnf } = getRoundShareResults(round);
+
+            if (round.names.length === 1) {
+                if (finished.length === 1) {
+                    return {
+                        title: "KIERROKSEN TULOS",
+                        text: `${finished[0].name} pelasi ${finished[0].total} lyöntiä.`,
+                        footnote: ""
+                    };
+                }
+
+                return {
+                    title: "KIERROKSEN TULOS",
+                    text: "Kierros päättyi ilman lyöntipelitulosta.",
+                    footnote: ""
+                };
+            }
+
+            if (finished.length === 0) {
+                return {
+                    title: "KIERROKSEN TULOS",
+                    text: "Kierroksella ei saatu lyöntipelitulosta.",
+                    footnote: ""
+                };
+            }
+
+            const bestScore = finished[0].total;
+            const winners = finished.filter(
+                player => player.total === bestScore
+            );
+
+            if (winners.length === 1) {
+                const runnerUp = finished.find(
+                    player => player.total > bestScore
+                );
+                const margin = runnerUp
+                    ? runnerUp.total - bestScore
+                    : 0;
+
+                let text =
+                    `${winners[0].name} voitti tuloksella ${bestScore} lyöntiä.`;
+
+                if (margin > 0) {
+                    text += ` Voittomarginaali oli ${margin} ${
+                        margin === 1 ? "lyönti" : "lyöntiä"
+                    }.`;
+                }
+
+                if (dnf.length > 0) {
+                    text += ` ${dnf.join(" ja ")}: DNF.`;
+                }
+
+                return {
+                    title: "🏆 VOITTAJA",
+                    text,
+                    footnote: ""
+                };
+            }
+
+            const winnerNames = winners
+                .map(player => player.name)
+                .join(" ja ");
+
+            return {
+                title: "🤝 TASATULOS",
+                text:
+                    `${winnerNames} pelasivat tuloksen ${bestScore} lyöntiä.`,
+                footnote:
+                    "Tasoituksia ei ole huomioitu. Mahdollinen tasoituksellinen voittaja määräytyy pelin sääntöjen mukaan."
+            };
+        }
+
+        function roundedRectPath(context, x, y, width, height, radius) {
+            const r = Math.min(radius, width / 2, height / 2);
+
+            context.beginPath();
+            context.moveTo(x + r, y);
+            context.arcTo(x + width, y, x + width, y + height, r);
+            context.arcTo(
+                x + width,
+                y + height,
+                x,
+                y + height,
+                r
+            );
+            context.arcTo(x, y + height, x, y, r);
+            context.arcTo(x, y, x + width, y, r);
+            context.closePath();
+        }
+
+        function fillRoundedRect(
+            context,
+            x,
+            y,
+            width,
+            height,
+            radius,
+            fillStyle
+        ) {
+            context.save();
+            roundedRectPath(context, x, y, width, height, radius);
+            context.fillStyle = fillStyle;
+            context.fill();
+            context.restore();
+        }
+
+        function drawWrappedText(
+            context,
+            text,
+            x,
+            y,
+            maxWidth,
+            lineHeight,
+            maxLines = 3
+        ) {
+            const words = String(text).split(/\s+/);
+            const lines = [];
+            let line = "";
+
+            words.forEach(word => {
+                const testLine = line ? `${line} ${word}` : word;
+
+                if (
+                    context.measureText(testLine).width > maxWidth &&
+                    line
+                ) {
+                    lines.push(line);
+                    line = word;
+                } else {
+                    line = testLine;
+                }
+            });
+
+            if (line) {
+                lines.push(line);
+            }
+
+            const visibleLines = lines.slice(0, maxLines);
+
+            if (lines.length > maxLines) {
+                let last = visibleLines[maxLines - 1];
+
+                while (
+                    context.measureText(`${last}…`).width > maxWidth &&
+                    last.length > 1
+                ) {
+                    last = last.slice(0, -1);
+                }
+
+                visibleLines[maxLines - 1] = `${last}…`;
+            }
+
+            visibleLines.forEach((item, index) => {
+                context.fillText(item, x, y + index * lineHeight);
+            });
+
+            return visibleLines.length * lineHeight;
+        }
+
+        function fitCanvasText(context, text, maxWidth, startSize, minSize) {
+            let size = startSize;
+
+            while (size > minSize) {
+                context.font = `700 ${size}px Arial`;
+
+                if (context.measureText(text).width <= maxWidth) {
+                    break;
+                }
+
+                size -= 1;
+            }
+
+            return size;
+        }
+
+        async function loadShareLogo() {
+            return new Promise(resolve => {
+                const image = new Image();
+                image.onload = () => resolve(image);
+                image.onerror = () => resolve(null);
+                image.src = "icons/icon-192.png";
+            });
+        }
+
+        async function createVerticalScorecardCanvas(round) {
+            const canvas = document.createElement("canvas");
+            canvas.width = 1080;
+            canvas.height = 1920;
+
+            const context = canvas.getContext("2d");
+            const width = canvas.width;
+            const height = canvas.height;
+
+            const forest = "#173f18";
+            const forestTwo = "#286f24";
+            const mint = "#eaf5e5";
+            const cream = "#fbfcf7";
+            const gold = "#f2d178";
+            const ink = "#173019";
+            const line = "#bfd2ba";
+            const white = "#ffffff";
+
+            const background = context.createLinearGradient(
+                0,
+                0,
+                0,
+                height
+            );
+            background.addColorStop(0, forest);
+            background.addColorStop(0.23, "#315f31");
+            background.addColorStop(0.56, "#d7ebcf");
+            background.addColorStop(1, "#eef6e9");
+
+            context.fillStyle = background;
+            context.fillRect(0, 0, width, height);
+
+            context.globalAlpha = 0.06;
+            context.strokeStyle = white;
+            context.lineWidth = 3;
+
+            for (let x = -height; x < width + height; x += 90) {
+                context.beginPath();
+                context.moveTo(x, 0);
+                context.lineTo(x + height, height);
+                context.stroke();
+            }
+
+            context.globalAlpha = 1;
+
+            const logo = await loadShareLogo();
+
+            if (logo) {
+                fillRoundedRect(context, 72, 60, 124, 124, 28, white);
+                context.drawImage(logo, 82, 70, 104, 104);
+            }
+
+            context.fillStyle = white;
+            context.textAlign = "left";
+            context.font = "700 34px Arial";
+            context.fillText("GOLF VOICE", 224, 101);
+            context.font = "800 58px Georgia";
+            context.fillText("Scorecard AI", 224, 159);
+
+            context.fillStyle = gold;
+            context.font = "700 22px Arial";
+            context.fillText(
+                "BY PETRI SUOKAS · POWERED BY AI",
+                224,
+                198
+            );
+
+            fillRoundedRect(
+                context,
+                48,
+                238,
+                width - 96,
+                height - 286,
+                36,
+                cream
+            );
+
+            context.fillStyle = ink;
+            context.font = "800 46px Georgia";
+            const course =
+                round.course || "Kenttä nimeämättä";
+            const courseSize = fitCanvasText(
+                context,
+                course,
+                width - 160,
+                46,
+                28
+            );
+            context.font = `800 ${courseSize}px Georgia`;
+            context.fillText(course, 84, 312);
+
+            context.fillStyle = "#4f6451";
+            context.font = "700 25px Arial";
+            context.fillText(
+                `${formatDate(round.date)} · ${round.gameFormat || "Lyöntipeli"}`,
+                84,
+                354
+            );
+
+            if (round.notes) {
+                context.font = "400 22px Arial";
+                context.fillStyle = "#5d6d5e";
+                drawWrappedText(
+                    context,
+                    round.notes,
+                    84,
+                    389,
+                    width - 168,
+                    27,
+                    2
+                );
+            }
+
+            const summaryTop = round.notes ? 452 : 400;
+            fillRoundedRect(
+                context,
+                76,
+                summaryTop,
+                width - 152,
+                190,
+                24,
+                mint
+            );
+
+            context.fillStyle = forest;
+            context.font = "800 25px Arial";
+            context.fillText("KIERROKSEN YHTEENVETO", 102, summaryTop + 40);
+
+            const summaryColumnWidths = [
+                360,
+                150,
+                150,
+                190
             ];
+            const summaryHeaders = [
+                "Pelaaja",
+                "Etu",
+                "Taka",
+                "Yht."
+            ];
+            const summaryX = [102];
+            summaryColumnWidths.forEach((value, index) => {
+                if (index < summaryColumnWidths.length - 1) {
+                    summaryX.push(summaryX[index] + value);
+                }
+            });
+
+            context.font = "700 22px Arial";
+            context.fillStyle = "#506252";
+            summaryHeaders.forEach((header, index) => {
+                context.textAlign = index === 0 ? "left" : "center";
+                const x = index === 0
+                    ? summaryX[index]
+                    : summaryX[index] + summaryColumnWidths[index] / 2;
+                context.fillText(header, x, summaryTop + 78);
+            });
 
             round.names.forEach((name, index) => {
                 const player = index + 1;
                 const scores = round.scores[player] || [];
-                const front = scores
-                    .slice(0, 9)
-                    .reduce((sum, value) => sum + Number(value || 0), 0);
-                const back = scores
-                    .slice(9, 18)
-                    .reduce((sum, value) => sum + Number(value || 0), 0);
+                const y = summaryTop + 112 + index * 28;
+                const front = calculateSharedNine(scores, 0, 9);
+                const back = calculateSharedNine(scores, 9, 18);
+                const total = round.totals[player];
 
-                lines.push(`${name}`);
-                lines.push(
-                    "1–9: " +
-                    scores
-                        .slice(0, 9)
-                        .map((score, holeIndex) =>
-                            `${holeIndex + 1}:${score || "-"}`
-                        )
-                        .join("  ")
+                context.fillStyle = ink;
+                context.font = "700 21px Arial";
+                context.textAlign = "left";
+                const nameSize = fitCanvasText(
+                    context,
+                    name,
+                    summaryColumnWidths[0] - 16,
+                    21,
+                    15
                 );
-                lines.push(
-                    "10–18: " +
-                    scores
-                        .slice(9, 18)
-                        .map((score, holeIndex) =>
-                            `${holeIndex + 10}:${score || "-"}`
-                        )
-                        .join("  ")
-                );
-                lines.push(
-                    `Etuysi ${front}, takaysi ${back}, yhteensä ${round.totals[player]}`
-                );
-                lines.push("");
+                context.font = `700 ${nameSize}px Arial`;
+                context.fillText(name, summaryX[0], y);
+
+                [front, back, total].forEach((value, valueIndex) => {
+                    const columnIndex = valueIndex + 1;
+                    context.font = "700 21px Arial";
+                    context.textAlign = "center";
+                    context.fillText(
+                        String(value),
+                        summaryX[columnIndex] +
+                            summaryColumnWidths[columnIndex] / 2,
+                        y
+                    );
+                });
             });
 
-            if (round.notes) {
-                lines.push(`Huomautus: ${round.notes}`);
+            const tableTop = summaryTop + 218;
+            const tableLeft = 76;
+            const tableWidth = width - 152;
+            const headerHeight = 54;
+            const rowHeight = 42;
+            const numberOfRows = 21;
+            const tableHeight =
+                headerHeight + numberOfRows * rowHeight;
+
+            fillRoundedRect(
+                context,
+                tableLeft,
+                tableTop,
+                tableWidth,
+                tableHeight,
+                24,
+                white
+            );
+
+            context.save();
+            roundedRectPath(
+                context,
+                tableLeft,
+                tableTop,
+                tableWidth,
+                tableHeight,
+                24
+            );
+            context.clip();
+
+            const holeWidth = 120;
+            const playerWidth =
+                (tableWidth - holeWidth) / round.names.length;
+
+            context.fillStyle = forest;
+            context.fillRect(
+                tableLeft,
+                tableTop,
+                tableWidth,
+                headerHeight
+            );
+
+            context.fillStyle = white;
+            context.font = "800 22px Arial";
+            context.textAlign = "center";
+            context.fillText(
+                "Reikä",
+                tableLeft + holeWidth / 2,
+                tableTop + 35
+            );
+
+            round.names.forEach((name, index) => {
+                const center =
+                    tableLeft +
+                    holeWidth +
+                    playerWidth * index +
+                    playerWidth / 2;
+                const size = fitCanvasText(
+                    context,
+                    name,
+                    playerWidth - 14,
+                    22,
+                    13
+                );
+                context.font = `800 ${size}px Arial`;
+                context.fillText(name, center, tableTop + 35);
+            });
+
+            const rows = [];
+
+            for (let hole = 1; hole <= 18; hole++) {
+                rows.push({
+                    label: String(hole),
+                    hole,
+                    type: "hole"
+                });
+
+                if (hole === 9) {
+                    rows.push({
+                        label: "Etuysi",
+                        type: "front"
+                    });
+                }
+
+                if (hole === 18) {
+                    rows.push({
+                        label: "Takaysi",
+                        type: "back"
+                    });
+                }
+            }
+
+            rows.push({
+                label: "Yhteensä",
+                type: "total"
+            });
+
+            rows.forEach((row, rowIndex) => {
+                const y =
+                    tableTop + headerHeight + rowIndex * rowHeight;
+                const isSummary =
+                    row.type === "front" ||
+                    row.type === "back" ||
+                    row.type === "total";
+
+                context.fillStyle = row.type === "total"
+                    ? "#dce9d7"
+                    : isSummary
+                        ? mint
+                        : rowIndex % 2 === 0
+                            ? white
+                            : "#f7faf5";
+                context.fillRect(
+                    tableLeft,
+                    y,
+                    tableWidth,
+                    rowHeight
+                );
+
+                context.fillStyle = isSummary ? forest : ink;
+                context.font = `${isSummary ? "800" : "700"} 20px Arial`;
+                context.textAlign = "center";
+                context.fillText(
+                    row.label,
+                    tableLeft + holeWidth / 2,
+                    y + 28
+                );
+
+                round.names.forEach((name, index) => {
+                    const player = index + 1;
+                    const scores = round.scores[player] || [];
+                    let value = "";
+
+                    if (row.type === "hole") {
+                        value = getShareScoreValue(
+                            scores[row.hole - 1]
+                        ) || "–";
+                    } else if (row.type === "front") {
+                        value = calculateSharedNine(scores, 0, 9);
+                    } else if (row.type === "back") {
+                        value = calculateSharedNine(scores, 9, 18);
+                    } else {
+                        value = round.totals[player];
+                    }
+
+                    context.fillStyle = row.type === "total"
+                        ? forest
+                        : ink;
+                    context.font =
+                        `${isSummary ? "800" : "700"} 21px Arial`;
+                    context.textAlign = "center";
+                    context.fillText(
+                        String(value),
+                        tableLeft +
+                            holeWidth +
+                            playerWidth * index +
+                            playerWidth / 2,
+                        y + 28
+                    );
+                });
+            });
+
+            context.strokeStyle = line;
+            context.lineWidth = 2;
+
+            for (let row = 0; row <= numberOfRows; row++) {
+                const y =
+                    tableTop + headerHeight + row * rowHeight;
+                context.beginPath();
+                context.moveTo(tableLeft, y);
+                context.lineTo(tableLeft + tableWidth, y);
+                context.stroke();
+            }
+
+            context.beginPath();
+            context.moveTo(tableLeft + holeWidth, tableTop);
+            context.lineTo(
+                tableLeft + holeWidth,
+                tableTop + tableHeight
+            );
+            context.stroke();
+
+            for (let player = 1; player < round.names.length; player++) {
+                const x =
+                    tableLeft + holeWidth + playerWidth * player;
+                context.beginPath();
+                context.moveTo(x, tableTop);
+                context.lineTo(x, tableTop + tableHeight);
+                context.stroke();
+            }
+
+            context.restore();
+
+            const winner = buildShareWinnerSummary(round);
+            const winnerTop = tableTop + tableHeight + 32;
+            const winnerHeight = winner.footnote ? 172 : 126;
+
+            fillRoundedRect(
+                context,
+                76,
+                winnerTop,
+                width - 152,
+                winnerHeight,
+                24,
+                winner.title.includes("VOITTAJA")
+                    ? "#fff5cf"
+                    : mint
+            );
+
+            context.fillStyle = forest;
+            context.font = "800 24px Arial";
+            context.textAlign = "left";
+            context.fillText(
+                winner.title,
+                104,
+                winnerTop + 38
+            );
+
+            context.fillStyle = ink;
+            context.font = "700 24px Arial";
+            drawWrappedText(
+                context,
+                winner.text,
+                104,
+                winnerTop + 74,
+                width - 208,
+                30,
+                2
+            );
+
+            if (winner.footnote) {
+                context.fillStyle = "#5c695d";
+                context.font = "400 18px Arial";
+                drawWrappedText(
+                    context,
+                    winner.footnote,
+                    104,
+                    winnerTop + 132,
+                    width - 208,
+                    23,
+                    2
+                );
+            }
+
+            context.fillStyle = "#607262";
+            context.font = "600 18px Arial";
+            context.textAlign = "center";
+            context.fillText(
+                "Golf Voice Scorecard AI · golfkierros_tulos_laskuri",
+                width / 2,
+                height - 34
+            );
+
+            return canvas;
+        }
+
+        function canvasToBlob(canvas) {
+            return new Promise((resolve, reject) => {
+                canvas.toBlob(blob => {
+                    if (blob) {
+                        resolve(blob);
+                    } else {
+                        reject(
+                            new Error("Jakokuvan luominen epäonnistui.")
+                        );
+                    }
+                }, "image/png", 1);
+            });
+        }
+
+        function buildShareText(round) {
+            const winner = buildShareWinnerSummary(round);
+            const lines = [
+                "Golf Voice Scorecard AI",
+                `${round.course || "Kenttä nimeämättä"} – ${formatDate(round.date)}`,
+                round.gameFormat || "Lyöntipeli",
+                "",
+                `${winner.title.replace(/[🏆🤝]/g, "").trim()}: ${winner.text}`
+            ];
+
+            if (winner.footnote) {
+                lines.push(winner.footnote);
             }
 
             return lines.join("\n");
@@ -1489,27 +2150,87 @@
                 return;
             }
 
-            const text = buildShareText(round);
+            const shareButtons = document.querySelectorAll(
+                `[onclick="shareRound('${roundId}')"]`
+            );
 
-            if (navigator.share) {
-                try {
-                    await navigator.share({
-                        title: `Golfkierros – ${round.course}`,
-                        text
-                    });
-                    return;
-                } catch (error) {
-                    if (error.name === "AbortError") {
-                        return;
-                    }
-                }
-            }
+            shareButtons.forEach(button => {
+                button.disabled = true;
+                button.textContent = "Luodaan jakokorttia…";
+            });
 
             try {
-                await navigator.clipboard.writeText(text);
-                alert("Kierroksen tiedot kopioitiin leikepöydälle.");
+                const canvas =
+                    await createVerticalScorecardCanvas(round);
+                const blob = await canvasToBlob(canvas);
+                const safeCourse = String(
+                    round.course || "golfkierros"
+                )
+                    .replace(/[^\p{L}\p{N}_-]+/gu, "_")
+                    .replace(/^_+|_+$/g, "")
+                    .slice(0, 40) || "golfkierros";
+                const filename =
+                    `Golf_Voice_${safeCourse}_${round.date || "kierros"}.png`;
+                const file = new File(
+                    [blob],
+                    filename,
+                    { type: "image/png" }
+                );
+                const shareText = buildShareText(round);
+
+                if (
+                    navigator.share &&
+                    (!navigator.canShare ||
+                        navigator.canShare({ files: [file] }))
+                ) {
+                    try {
+                        await navigator.share({
+                            title: `Golfkierros – ${round.course}`,
+                            text: shareText,
+                            files: [file]
+                        });
+                        return;
+                    } catch (error) {
+                        if (error.name === "AbortError") {
+                            return;
+                        }
+                    }
+                }
+
+                const imageUrl = URL.createObjectURL(blob);
+                const downloadLink = document.createElement("a");
+                downloadLink.href = imageUrl;
+                downloadLink.download = filename;
+                downloadLink.rel = "noopener";
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                downloadLink.remove();
+
+                setTimeout(() => {
+                    URL.revokeObjectURL(imageUrl);
+                }, 3000);
+
+                alert(
+                    "Tuloskortti luotiin kuvaksi. Voit jakaa sen Kuvat- tai Tiedostot-sovelluksesta."
+                );
             } catch (error) {
-                prompt("Kopioi kierroksen tiedot:", text);
+                console.error(error);
+
+                const text = buildShareText(round);
+
+                try {
+                    await navigator.clipboard.writeText(text);
+                    alert(
+                        "Jakokuvan luominen epäonnistui, joten kierroksen yhteenveto kopioitiin leikepöydälle."
+                    );
+                } catch (clipboardError) {
+                    prompt("Kopioi kierroksen yhteenveto:", text);
+                }
+            } finally {
+                shareButtons.forEach(button => {
+                    button.disabled = false;
+                    button.textContent = "Jaa tuloskortti";
+                });
             }
         }
 
