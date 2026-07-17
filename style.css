@@ -1066,3 +1066,22 @@ body {
         padding: 0 16px 16px;
     }
 }
+
+
+/* --- v3.7.3: estetään iOS Safarin automaattinen zoomaus nimikenttää muokattaessa --- */
+@media (max-width: 600px) and (pointer: coarse) {
+    /* iOS Safari suurentaa näkymän automaattisesti, jos aktiivisen kentän
+       fonttikoko on alle 16 px. Tämä saattoi jättää tuloskortin väärään
+       mittakaavaan pelaajan nimen korjaamisen jälkeen. */
+    .player-name,
+    .score-input,
+    .form-grid input,
+    .form-grid select,
+    .form-grid textarea {
+        font-size: 16px !important;
+    }
+
+    .player-name {
+        letter-spacing: -0.02em;
+    }
+}
