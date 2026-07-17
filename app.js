@@ -2104,9 +2104,17 @@
             context.font = "600 18px Arial";
             context.textAlign = "center";
             context.fillText(
-                "Golf Voice Scorecard AI · golfkierros_tulos_laskuri",
+                "Petri Suokas",
                 width / 2,
-                height - 34
+                height - 58
+            );
+
+            context.fillStyle = "#607262";
+            context.font = "800 18px Arial";
+            context.fillText(
+                "AI Golf Apps",
+                width / 2,
+                height - 32
             );
 
             return canvas;
@@ -2130,6 +2138,7 @@
             const winner = buildShareWinnerSummary(round);
             const lines = [
                 "Golf Voice Scorecard AI",
+                "Petri Suokas · AI Golf Apps",
                 `${round.course || "Kenttä nimeämättä"} – ${formatDate(round.date)}`,
                 round.gameFormat || "Lyöntipeli",
                 "",
