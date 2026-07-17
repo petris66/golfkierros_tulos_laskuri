@@ -671,3 +671,204 @@
                 box-shadow: inset 0 0 0 0 transparent;
             }
         }
+
+
+/* --- v3.6.0: puhelimelle tiiviimpi kierrosnäkymä --- */
+
+.compact-hole-line {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 9px;
+    color: var(--forest-2);
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.compact-hole-line strong {
+    min-width: 30px;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 24px;
+    line-height: 1;
+}
+
+.voice-quick-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.compact-toggle,
+.dash-button {
+    min-height: 44px;
+    border: 1px solid #afc6aa;
+    border-radius: 14px;
+    background: #f2f8ef;
+}
+
+.compact-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 7px 9px;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.compact-toggle input {
+    width: 22px;
+    height: 22px;
+    margin: 0;
+    flex: 0 0 auto;
+    accent-color: var(--forest-2);
+}
+
+.dash-button {
+    padding: 7px 8px;
+    color: var(--ink);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.nine-hidden {
+    display: none !important;
+}
+
+table {
+    min-width: 0;
+    table-layout: fixed;
+}
+
+.hole-cell {
+    width: 45px;
+}
+
+.player-name {
+    min-width: 0;
+}
+
+.score-input {
+    min-width: 0;
+}
+
+/* Ensimmäisen tallennetun reiän jälkeen näytetään vain kentällä tarvittavat osat. */
+.round-active #hero,
+.round-active #setupCard,
+.round-active #nextHoleCard {
+    display: none;
+}
+
+.round-active .voice-card {
+    padding: 10px 11px;
+    border-radius: 18px;
+}
+
+.round-active .voice-card .section-title {
+    display: none;
+}
+
+.round-active #voiceButton {
+    min-height: 52px;
+    border-radius: 16px;
+    font-size: 16px;
+}
+
+.round-active .compact-hole-line {
+    display: flex;
+}
+
+.round-active #voiceStatus {
+    min-height: 0;
+    margin-top: 8px;
+    padding: 7px 9px;
+    border-radius: 12px;
+    font-size: 12px;
+    line-height: 1.25;
+}
+
+.round-active .voice-quick-controls {
+    margin-top: 7px;
+}
+
+.round-active .scorecard-card {
+    padding: 10px 7px;
+    border-radius: 18px;
+}
+
+.round-active .scorecard-card .section-title {
+    margin: 0 4px 7px;
+    font-size: 12px;
+}
+
+.round-active .table-wrap {
+    border-radius: 12px;
+}
+
+.round-active th,
+.round-active td {
+    height: 31px;
+    padding: 2px 1px;
+    font-size: 12px;
+}
+
+.round-active .player-name {
+    height: 27px;
+    padding: 2px;
+    border-radius: 7px;
+    font-size: 11px;
+}
+
+.round-active .score-input {
+    min-height: 27px;
+    height: 27px;
+    padding: 0;
+    font-size: 15px;
+}
+
+.round-active .subtotal,
+.round-active .total {
+    font-size: 12px;
+}
+
+@media (max-width: 500px) {
+    .voice-quick-controls {
+        gap: 6px;
+    }
+
+    .compact-toggle,
+    .dash-button {
+        min-height: 42px;
+        font-size: 12px;
+    }
+
+    .round-active body {
+        padding-top: 0;
+    }
+
+    .round-active .voice-card {
+        top: 4px;
+        margin-bottom: 8px;
+    }
+
+    .round-active .scorecard-card {
+        margin-bottom: 8px;
+    }
+}
+
+@media (max-width: 370px) {
+    .compact-toggle,
+    .dash-button {
+        font-size: 11px;
+        padding-left: 5px;
+        padding-right: 5px;
+    }
+
+    .round-active th,
+    .round-active td {
+        font-size: 11px;
+    }
+}

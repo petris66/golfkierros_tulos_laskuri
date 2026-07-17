@@ -17,20 +17,20 @@
 
     <title>Golf Voice Scorecard AI</title>
 
-    <link rel="stylesheet" href="style.css?v=3.5.1">
+    <link rel="stylesheet" href="style.css?v=3.6.0">
 
 </head>
 
 <body>
     <main class="app">
-        <header class="hero">
+        <header class="hero" id="hero">
             <div class="hero-badge">⛳ VOICE SCORING</div>
             <h1><span>Golf Voice</span><strong>Scorecard AI</strong></h1>
             <p class="hero-subtitle">Kirjaa golfkierros nopeasti puheella</p>
             <p class="hero-signature">By Petri Suokas · Powered by AI</p>
         </header>
 
-        <section class="card setup-card">
+        <section class="card setup-card" id="setupCard">
             <h2 class="section-title">KIERROKSEN ASETUKSET</h2>
             <p class="section-help">Valitse kierroksella pelaavien määrä.</p>
 
@@ -42,7 +42,7 @@
             </div>
         </section>
 
-        <section class="card next-hole-box next-hole-card">
+        <section class="card next-hole-box next-hole-card" id="nextHoleCard">
             <div>
                 <div class="next-hole-label">Seuraava reikä</div>
                 <div class="muted">Reikä vaihtuu onnistuneen kirjauksen jälkeen.</div>
@@ -66,24 +66,27 @@
                 Paina mikrofonipainiketta ja sano tulokset.
             </div>
 
-            <div class="toggle-row">
-                <label for="announceStandings">
-                    🔊 Kerro pelitilanne reiän jälkeen
-                </label>
-                <input
-                    type="checkbox"
-                    id="announceStandings"
-                    aria-label="Kerro pelitilanne reiän jälkeen"
-                >
+            <div class="compact-hole-line">
+                <span>Seuraava reikä</span>
+                <strong id="compactNextHole">1</strong>
             </div>
 
-            <div class="manual-score-actions">
+            <div class="voice-quick-controls">
+                <label class="compact-toggle" for="announceStandings">
+                    <span>🔊 Pelitilanne</span>
+                    <input
+                        type="checkbox"
+                        id="announceStandings"
+                        aria-label="Kerro pelitilanne reiän jälkeen"
+                    >
+                </label>
+
                 <button
                     type="button"
-                    class="action-button"
+                    class="dash-button"
                     onclick="setDashForSelectedScore()"
                 >
-                    ➖ Merkitse viiva valittuun ruutuun
+                    ➖ Viiva tuloskorttiin
                 </button>
             </div>
 
@@ -251,7 +254,7 @@
     </div>
     </div>
 
-    <script src="app.js?v=3.5.1" defer></script>
+    <script src="app.js?v=3.6.0" defer></script>
 
 </body>
 </html>
