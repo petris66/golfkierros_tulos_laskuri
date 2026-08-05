@@ -1,12 +1,40 @@
 # Golf Voice Scorecard AI
+## Current version
 
+v0.5.5
+
+### v0.5.5
+
+Live repository updated from tested development version v0.5.4.12.
+
+This release includes the tested features and fixes migrated from the development repository.
+
+This release includes the features and fixes from development version v0.5.4.12.
+
+Changes:
+- Updated application core files
+- Added extended course and tee data
+- Migrated tested development version to live repository
+- Fixed GitHub Pages case-sensitive data path
+- Verified iPhone compatibility
+## Current version
+
+v0.5.4.12
+
+## Latest update
+
+- Updated application files from development version
+- Added extended golf course and tee data
+- Fixed GitHub Pages case-sensitive data path
+- Verified iPhone compatibility
+  
 AI-assisted voice-controlled golf scorecard application.
 
 Golf Voice Scorecard AI is a mobile-first web application designed to make golf scoring faster and easier using voice commands.
 
 ## Project status
 
-This repository contains a development version of Golf Voice Scorecard AI.
+This repository contains the live version of Golf Voice Scorecard AI.
 
 ## Main features
 
@@ -152,7 +180,7 @@ Poista vanha kotinäytön kuvake ja lisää sovellus Safari-valikosta uudelleen,
 - Sovelluksen kierroksen aikainen voittajan ilmoitus säilyy ennallaan.
 - Jakokuvan korkeutta tiivistettiin poistuneen yhteenveto-osion verran.
 
-- ---
+ ---
 
 ## License
 
