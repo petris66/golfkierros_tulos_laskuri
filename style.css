@@ -6,6 +6,15 @@
             --strong: #dce5db;
             --text: #1f2a22;
             --danger: #fff0f0;
+            --forest: #173f18;
+            --forest-2: #286f24;
+            --leaf: #75a96c;
+            --mint: #eaf5e5;
+            --cream: #fbfcf7;
+            --gold: #f2d178;
+            --ink: #173019;
+            --line: #bfd2ba;
+            --shadow: 0 14px 34px rgba(22, 63, 24, 0.14);
         }
 
         * {
@@ -31,15 +40,7 @@
             font-size: 24px;
         }
 
-        .card {
-            margin-bottom: 12px;
-            padding: 12px;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            background: var(--card);
-        }
-
-        .section-title {
+                .section-title {
             margin: 0 0 10px;
             font-size: 17px;
         }
@@ -50,18 +51,7 @@
             gap: 8px;
         }
 
-        .player-count button,
-        .action-button {
-            min-height: 46px;
-            padding: 10px;
-            border: 1px solid #9da69e;
-            border-radius: 8px;
-            background: white;
-            font-size: 16px;
-            cursor: pointer;
-        }
-
-        .player-count button.active {
+                .player-count button.active {
             font-weight: bold;
             background: var(--strong);
             border-color: #6f7c70;
@@ -260,14 +250,7 @@
             flex: 0 0 auto;
         }
 
-        .voice-card {
-            position: sticky;
-            top: 8px;
-            z-index: 50;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.10);
-        }
-
-
+        
         .form-grid {
             display: grid;
             gap: 10px;
@@ -357,17 +340,7 @@
         }
 
         /* --- Golf Voice Scorecard AI visual theme --- */
-        :root {
-            --forest: #173f18;
-            --forest-2: #286f24;
-            --leaf: #75a96c;
-            --mint: #eaf5e5;
-            --cream: #fbfcf7;
-            --gold: #f2d178;
-            --ink: #173019;
-            --line: #bfd2ba;
-            --shadow: 0 14px 34px rgba(22, 63, 24, 0.14);
-        }
+        
 
         body {
             padding: 0 12px 32px;
@@ -481,11 +454,15 @@
         .player-count button,
         .action-button,
         .small-button {
+            min-height: 44px;
+            padding: 9px;
             border: 1px solid #afc6aa;
             border-radius: 16px;
             color: var(--ink);
             background: #f7fbf4;
+            font-size: 14px;
             font-weight: 700;
+            cursor: pointer;
             box-shadow: 0 4px 10px rgba(23, 63, 24, .06);
         }
 
@@ -522,7 +499,9 @@
         }
 
         .voice-card {
+            position: sticky;
             top: 8px;
+            z-index: 50;
             padding: 20px;
             border-color: #9fc49a;
             box-shadow: 0 15px 36px rgba(23,63,24,.20);
@@ -1084,4 +1063,743 @@ body {
     .player-name {
         letter-spacing: -0.02em;
     }
+}
+
+/* Feature 1 - kierroksen hallinta */
+.actions {
+    grid-template-columns: 1fr 1fr;
+}
+
+/* --- Feature 1.3.3: restore mobile start scaling --- */
+
+/* Aloitusreikä pidetään vähintään 16 px:n fontilla, jotta iOS Safari
+   ei zoomaa sivua kenttää muokattaessa. Samalla numero näkyy selkeästi. */
+#startHoleInput {
+    width: 96px !important;
+    min-height: 58px;
+    font-size: 32px !important;
+    font-weight: 900;
+    line-height: 1;
+    text-align: center;
+    color: var(--forest);
+}
+
+@media (max-width: 500px) {
+    .hero {
+        min-height: 150px;
+        padding: 24px 14px 14px;
+        overflow: hidden;
+    }
+
+    .hero-badge {
+        padding: 7px 12px;
+        font-size: 11px;
+    }
+
+    .hero h1 {
+        margin: 12px 0 8px;
+    }
+
+    .hero h1 span,
+    .hero h1 strong {
+        font-size: 34px;
+    }
+
+    .hero-subtitle {
+        margin: 8px 0 6px;
+        font-size: 14px;
+    }
+
+    .hero-signature {
+        font-size: 12px;
+    }
+
+    .setup-card {
+        margin-top: 8px;
+    }
+
+    .setup-card .section-help {
+        margin-bottom: 10px;
+    }
+
+    .next-hole-card {
+        min-height: 120px;
+    }
+
+    .next-hole-number {
+        font-size: 72px;
+        font-weight: 900;
+    }
+}
+
+
+/* --- Paketti 2: JSON-pohjainen kenttädata --- */
+.course-settings {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 9px;
+    margin-top: 8px;
+}
+
+.course-settings label {
+    display: grid;
+    gap: 5px;
+    color: #557254;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.course-settings select {
+    width: 100%;
+    min-width: 0;
+    padding: 9px 8px;
+    border: 1px solid #b8cdb3;
+    border-radius: 10px;
+    color: var(--forest);
+    background: #fbfdf9;
+    font: inherit;
+}
+
+.course-data-status,
+.selected-course-info {
+    margin: 9px 0 0;
+    font-size: 12px;
+    line-height: 1.35;
+}
+
+.course-data-status {
+    color: #557254;
+}
+
+.selected-course-info {
+    padding: 8px 10px;
+    border: 1px solid #c6d9c1;
+    border-radius: 10px;
+    color: var(--forest);
+    background: #f2f8ef;
+    font-weight: 700;
+}
+
+.course-stat-cell {
+    width: 38px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+@media (max-width: 500px) {
+    .course-settings {
+        grid-template-columns: 1fr;
+    }
+
+    .course-stat-cell {
+        width: 33px;
+        font-size: 11px;
+    }
+}
+
+/* --- Paketti 3: pelaajakohtainen tarkka HCP ja tii --- */
+.player-round-settings {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #d5e2d1;
+}
+
+.player-round-settings h3 {
+    margin: 0 0 9px;
+    color: var(--forest-2);
+    font-size: 13px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.player-round-settings-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+}
+
+.player-round-setting {
+    display: grid;
+    grid-template-columns: minmax(54px, auto) minmax(0, .8fr) minmax(0, 1fr);
+    align-items: end;
+    gap: 7px;
+    padding: 9px;
+    border: 1px solid #c6d9c1;
+    border-radius: 12px;
+    background: #f7fbf4;
+}
+
+.player-round-setting > strong {
+    align-self: center;
+    overflow: hidden;
+    color: var(--forest);
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.player-round-setting label {
+    display: grid;
+    gap: 4px;
+    color: #557254;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.player-round-setting input,
+.player-round-setting select {
+    width: 100%;
+    min-width: 0;
+    min-height: 38px;
+    padding: 7px 6px;
+    border: 1px solid #b8cdb3;
+    border-radius: 9px;
+    color: var(--forest);
+    background: white;
+    font: inherit;
+}
+
+@media (max-width: 500px) {
+    .player-round-settings-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* --- Paketti 3.1: vain kenttä yhteisenä, aktiiviset pelaajarivit --- */
+.course-settings-single {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.player-round-setting.hidden-player {
+    display: none !important;
+}
+
+
+/* --- Paketti 5.1: kentän HCP ja tasoituslyöntimerkit --- */
+.player-course-hcp {
+    grid-column: 1 / -1;
+    margin-top: 1px;
+    color: var(--forest-2);
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.score-cell {
+    position: relative;
+}
+
+.handicap-stroke-marker {
+    position: absolute;
+    top: 1px;
+    right: 2px;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1px;
+    min-width: 16px;
+    min-height: 16px;
+    pointer-events: none;
+    overflow: visible;
+}
+
+.handicap-golf-ball-svg {
+    display: block;
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
+    filter: drop-shadow(0 1px 1px rgba(23, 63, 24, 0.32));
+    overflow: visible;
+}
+
+.round-active .handicap-stroke-marker {
+    top: 0;
+    right: 1px;
+    gap: 1px;
+}
+
+.round-active .handicap-golf-ball-svg {
+    width: 15px;
+    height: 15px;
+    flex-basis: 15px;
+}
+
+
+/* --- Paketti 5.2: valinnainen Stableford-pistekortti --- */
+.stableford-toggle-wrap {
+    display: grid;
+    margin: -4px 0 16px;
+}
+
+.stableford-toggle-button {
+    width: 100%;
+    color: white;
+    background: linear-gradient(145deg, #2c7e28, #195119);
+    border-color: #195119;
+}
+
+.stableford-card {
+    display: none;
+}
+
+.stableford-card.visible {
+    display: block;
+}
+
+.stableford-player-name {
+    display: block;
+    overflow: hidden;
+    padding: 6px 2px;
+    color: var(--forest);
+    font-size: 13px;
+    font-weight: 900;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.stableford-point-cell {
+    font-size: 17px;
+    font-weight: 900;
+}
+
+.stableford-points-0 {
+    color: #7c2424;
+    background: #fde7e7;
+}
+
+.stableford-points-1 {
+    color: #6f5410;
+    background: #fff4cc;
+}
+
+.stableford-points-2 {
+    color: var(--forest);
+    background: #f8fbf6;
+}
+
+.stableford-points-3 {
+    color: #185c1b;
+    background: #e1f3dc;
+}
+
+.stableford-points-4plus {
+    color: white;
+    background: #3f8740;
+}
+
+.stableford-subtotal td {
+    font-weight: 900;
+}
+
+.round-active .stableford-card {
+    padding: 10px 7px;
+    border-radius: 18px;
+}
+
+.round-active .stableford-player-name {
+    padding: 2px 1px;
+    font-size: 11px;
+}
+
+.round-active .stableford-point-cell {
+    font-size: 15px;
+}
+
+@media (max-width: 500px) {
+    .stableford-toggle-wrap {
+        margin-bottom: 8px;
+    }
+
+    .stableford-player-name {
+        font-size: clamp(9px, 2.8vw, 12px);
+    }
+
+    .stableford-point-cell {
+        font-size: 16px;
+    }
+}
+
+
+/* --- Paketti 5.2.1: parempi luettavuus aktiivisella kierroksella --- */
+
+/* Puheentunnistuksen pitkä tekstikuittaus pois kenttänäkymästä.
+   Seuraava reikä, Pelitilanne ja Viiva-painike jäävät näkyviin. */
+.round-active #voiceStatus {
+    display: none;
+}
+
+.round-active .voice-quick-controls {
+    margin-top: 9px;
+}
+
+/* Hieman enemmän tilaa ysin tuloskortille ja selkeämmät perustiedot. */
+.round-active th,
+.round-active td {
+    height: 38px;
+}
+
+/* Reikä-, Par- ja HCP-sarakkeet erottuvat selkeästi. */
+.round-active [data-hole-row] > .hole-cell,
+.round-active [data-hole-row] > .course-stat-cell {
+    color: #123814;
+    background: #dfeadb;
+    font-weight: 900;
+}
+
+.round-active [data-hole-row] > .hole-cell {
+    font-size: 16px;
+}
+
+.round-active [data-hole-row] > .course-stat-cell {
+    font-size: 15px;
+}
+
+/* Otsikkorivin vasen osa käyttää samaa visuaalista ryhmittelyä. */
+.round-active thead .hole-cell,
+.round-active thead .course-stat-cell {
+    color: #123814;
+    background: #d3e3ce;
+    font-size: 13px;
+    font-weight: 900;
+}
+
+/* Hillitty vuororivitys auttaa seuraamaan oikeaa reikäriviä. */
+.round-active [data-hole-row]:nth-child(even) td:not(.hole-cell):not(.course-stat-cell) {
+    background-color: #f4f8f2;
+}
+
+/* Lyöntitulosten koko pidetään ennallaan, mutta pystykeskitys varmistetaan. */
+.round-active .score-input {
+    line-height: 1;
+}
+
+/* Stableford-kortissa sama selkeä vasen reuna. */
+.round-active [data-stableford-hole-row] > .hole-cell,
+.round-active [data-stableford-hole-row] > .course-stat-cell {
+    color: #123814;
+    background: #dfeadb;
+    font-size: 15px;
+    font-weight: 900;
+}
+
+.round-active .stableford-table thead .hole-cell,
+.round-active .stableford-table thead .course-stat-cell {
+    color: #123814;
+    background: #d3e3ce;
+    font-size: 13px;
+    font-weight: 900;
+}
+
+@media (max-width: 390px) {
+    .round-active [data-hole-row] > .hole-cell {
+        font-size: 15px;
+    }
+
+    .round-active [data-hole-row] > .course-stat-cell,
+    .round-active [data-stableford-hole-row] > .hole-cell,
+    .round-active [data-stableford-hole-row] > .course-stat-cell {
+        font-size: 14px;
+    }
+}
+
+
+/* --- Paketti 5.2.3: tiivis ja värillinen tiivalinta --- */
+.player-round-setting input[type="number"] {
+    min-height: 44px;
+    font-size: 19px;
+    font-weight: 900;
+    text-align: center;
+}
+
+.player-round-setting select {
+    min-height: 44px;
+    border-width: 2px;
+    font-size: 15px;
+    font-weight: 900;
+    transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+
+.player-round-setting select.tee-white {
+    color: #173019;
+    border-color: #9aa69a;
+    background: #ffffff;
+}
+
+.player-round-setting select.tee-yellow {
+    color: #4d3a00;
+    border-color: #c89d00;
+    background: #ffd83d;
+}
+
+.player-round-setting select.tee-red {
+    color: #ffffff;
+    border-color: #8f1e1e;
+    background: #d63b3b;
+}
+
+.player-round-setting select.tee-blue {
+    color: #ffffff;
+    border-color: #174f85;
+    background: #2f78b7;
+}
+
+.player-round-setting select.tee-unknown {
+    color: #557254;
+    border-color: #b8cdb3;
+    background: #eef4eb;
+}
+
+.player-course-hcp {
+    padding: 7px 10px;
+    border: 1px solid #b8d1b2;
+    border-radius: 10px;
+    color: #123814;
+    background: #e7f2e3;
+    font-size: 18px;
+    font-weight: 900;
+    text-align: center;
+}
+
+@media (max-width: 500px) {
+    .player-round-setting input[type="number"] {
+        font-size: 20px;
+    }
+
+    .player-round-setting select {
+        font-size: 16px;
+    }
+
+    .player-course-hcp {
+        font-size: 19px;
+    }
+}
+
+
+/* --- Paketti 5.4.2: tasoituksellisen lyöntipelin juokseva tilanne --- */
+.handicap-strokeplay-status {
+    min-height: 22px;
+    margin: 0 auto 3px;
+    font-size: 15px;
+    font-weight: 900;
+    line-height: 1.1;
+    text-align: center;
+}
+
+.handicap-status-under {
+    color: #c62828;
+}
+
+.handicap-status-even {
+    color: #173f18;
+}
+
+.handicap-status-over {
+    color: #173f18;
+}
+
+.handicap-status-unavailable {
+    color: #6b746c;
+}
+
+.round-active .handicap-strokeplay-status {
+    min-height: 17px;
+    margin-bottom: 1px;
+    font-size: 13px;
+}
+
+@media (max-width: 600px) {
+    .handicap-strokeplay-status {
+        font-size: 14px;
+    }
+
+    .round-active .handicap-strokeplay-status {
+        font-size: 12px;
+    }
+}
+
+
+/* v0.5.4.11 fix 3: player name is edited only in player settings */
+.player-round-setting > strong {
+    display: block;
+    margin-bottom: 8px;
+}
+
+.player-round-setting label {
+    min-width: 0;
+}
+
+.player-round-setting .player-name {
+    width: 100%;
+    min-width: 0;
+}
+
+.scorecard-player-name {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--forest);
+    font-weight: 800;
+    text-align: center;
+}
+
+
+/* v0.5.4.11 fix 4: player data on one row */
+.player-round-setting {
+    grid-template-columns: minmax(90px, 1.15fr) minmax(74px, .72fr) minmax(120px, 1.25fr) minmax(105px, .95fr);
+    align-items: end;
+}
+
+.player-round-setting > strong {
+    display: none !important;
+}
+
+.player-round-setting label {
+    margin: 0;
+}
+
+.player-round-setting .player-course-hcp {
+    grid-column: auto;
+    margin: 0;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 8px;
+    font-size: 15px;
+    white-space: nowrap;
+}
+
+.player-round-setting .player-name {
+    min-height: 44px;
+    font-size: 16px;
+    font-weight: 900;
+}
+
+@media (max-width: 500px) {
+    .player-round-setting {
+        grid-template-columns: minmax(76px, 1.05fr) minmax(64px, .72fr) minmax(105px, 1.18fr) minmax(90px, .9fr);
+        gap: 5px;
+        padding: 7px 6px;
+    }
+
+    .player-round-setting label {
+        font-size: 10px;
+    }
+
+    .player-round-setting input,
+    .player-round-setting select,
+    .player-round-setting .player-course-hcp {
+        min-height: 42px;
+        padding-left: 4px;
+        padding-right: 4px;
+    }
+
+    .player-round-setting .player-name,
+    .player-round-setting input[type="number"],
+    .player-round-setting select {
+        font-size: 14px !important;
+    }
+
+    .player-round-setting .player-course-hcp {
+        font-size: 12px;
+    }
+}
+
+
+/* v0.5.4.11 fix6 corrected: compact tee and visible course HCP */
+.player-round-setting {
+    grid-template-columns:
+        minmax(86px, 1.15fr)
+        minmax(66px, .72fr)
+        minmax(78px, .80fr)
+        minmax(78px, .78fr);
+}
+
+.player-round-setting label:nth-of-type(3) {
+    min-width: 0;
+}
+
+.player-round-setting label:nth-of-type(3) select {
+    width: 100%;
+    min-width: 0;
+    padding-left: 4px;
+    padding-right: 22px;
+}
+
+.player-round-setting .player-course-hcp {
+    grid-column: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 0;
+    min-height: 44px;
+    margin: 0;
+    padding: 4px 5px;
+    white-space: normal;
+}
+
+.player-course-hcp-label {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 1px;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.player-course-hcp-value {
+    display: inline-block;
+    min-width: 22px;
+    font-size: 22px;
+    font-weight: 900;
+    line-height: 1;
+    text-align: center;
+}
+
+@media (max-width: 500px) {
+    .player-round-setting {
+        grid-template-columns:
+            minmax(72px, 1.08fr)
+            minmax(56px, .68fr)
+            minmax(68px, .72fr)
+            minmax(70px, .72fr);
+        gap: 4px;
+        padding: 7px 5px;
+    }
+
+    .player-round-setting label:nth-of-type(3) select {
+        padding-left: 3px;
+        padding-right: 18px;
+        font-size: 13px !important;
+    }
+
+    .player-round-setting .player-course-hcp {
+        gap: 4px;
+        padding-left: 3px;
+        padding-right: 3px;
+        font-size: inherit;
+    }
+
+    .player-course-hcp-label {
+        font-size: 9px;
+    }
+
+    .player-course-hcp-value {
+        min-width: 20px;
+        font-size: 21px;
+    }
+}
+
+
+/* v0.5.4.11 fix7: keep start-hole input visible above mobile keyboard */
+#startHoleInput {
+    scroll-margin-top: 28vh;
+    scroll-margin-bottom: 42vh;
 }
