@@ -181,6 +181,35 @@ Poista vanha kotinäytön kuvake ja lisää sovellus Safari-valikosta uudelleen,
 - Jakokuvan korkeutta tiivistettiin poistuneen yhteenveto-osion verran.
 
  ---
+ ## v0.5.5 – Live release from tested development version
+
+- Migrated tested development version v0.5.4.12 to live repository
+- Updated application core files
+- Added extended golf course and tee data
+- Fixed GitHub Pages data path case-sensitivity issue
+- Verified iPhone PWA functionality
+
+
+## Field test
+
+v0.5.5 has been tested on the golf course with real players.
+
+Tested:
+- Live GitHub Pages version
+- iPhone PWA usage (Safari)
+- Android phone usage
+- Course selection
+- Tee selection
+- Voice score entry
+- Player scoring workflow
+
+Result:
+Successful field test with two players on the golf course.
+Tested on both iPhone and Android devices.
+
+---
+
+## License
 
 ## License
 
