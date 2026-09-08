@@ -1,5 +1,5 @@
 "use strict";
-        const APP_VERSION = document.querySelector('meta[name="app-version"]')?.content || "3.7.4";
+        const APP_VERSION = document.querySelector('meta[name="app-version"]')?.content || "3.7.5";
         const UPDATE_CHECK_URL = "version.json";
 
         async function updateToLatestVersionIfNeeded() {
