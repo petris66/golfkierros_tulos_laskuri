@@ -1,4 +1,31 @@
 "use strict";
+        const APP_VERSION = document.querySelector('meta[name="app-version"]')?.content || "3.7.4";
+        const UPDATE_CHECK_URL = "version.json";
+
+        async function updateToLatestVersionIfNeeded() {
+            try {
+                const response = await fetch(`${UPDATE_CHECK_URL}?t=${Date.now()}`, {
+                    cache: "no-store"
+                });
+                if (!response.ok) return false;
+
+                const data = await response.json();
+                const latestVersion = String(data?.version || "").trim();
+                if (!latestVersion || latestVersion === APP_VERSION) return false;
+
+                const url = new URL(window.location.href);
+                if (url.searchParams.get("v") === latestVersion) return false;
+
+                url.searchParams.set("v", latestVersion);
+                url.searchParams.set("refresh", Date.now().toString());
+                window.location.replace(url.toString());
+                return true;
+            } catch (error) {
+                console.info("Päivitystarkistus ohitettiin:", error);
+                return false;
+            }
+        }
+
 
         const STORAGE_KEY = "golfTuloslaskuriV2";
         const HISTORY_KEY = "golfTuloslaskuriHistory";
@@ -4183,6 +4210,9 @@
         });
 
         async function initializeApp() {
+            const updateStarted = await updateToLatestVersionIfNeeded();
+            if (updateStarted) return;
+
             await loadCourseData();
             buildScoreTable();
             buildStablefordScorecard();
