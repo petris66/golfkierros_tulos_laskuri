@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="app-version" content="3.7.6">
 
     <meta name="theme-color" content="#173f18">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Golf Voice">
-    <meta name="app-version" content="3.7.5">
 
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-v372.png">
@@ -18,7 +18,7 @@
 
     <title>Golf Voice Scorecard AI</title>
 
-    <link rel="stylesheet" href="style.css?v=3.7.5">
+    <link rel="stylesheet" href="style.css?v=3.7.6">
 
 </head>
 
@@ -41,18 +41,25 @@
                 <button type="button" data-count="3">3</button>
                 <button type="button" data-count="4">4</button>
             </div>
-            <p class="section-help">Anna pelaajien nimet, tarkat tasoitukset ja tiit.</p>
+            <p class="section-help">Anna pelaajien nimet, tarkat tasoitukset ja tiit. Oletus on M; vaihda N tarvittaessa nimen M/N-painikkeesta.</p>
 
             <div class="player-round-settings" id="playerRoundSettings" aria-label="Pelaajakohtaiset asetukset">
                 <h3>Pelaajakohtaiset tiedot</h3>
                 <div class="player-round-settings-grid">
                     <div class="player-round-setting player-column" data-player="1">
-                        <label>Nimi
-                            <input type="text" class="player-name" id="name1" value="" placeholder="P1" maxlength="12" aria-label="Pelaajan 1 nimi">
+                        <label class="player-name-label">Nimi
+                            <span class="player-name-wrap">
+                                <input type="text" class="player-name" id="name1" value="" placeholder="P1" maxlength="12" aria-label="Pelaajan 1 nimi">
+                                <button type="button" class="player-gender-trigger" data-player="1" aria-label="Valitse pelaajan 1 M tai N"></button>
+                            </span>
                         </label>
                         <label>Tarkka HCP
                             <input type="number" inputmode="decimal" step="0.1" min="-10" max="54" id="playerHcp1" placeholder="0,0" aria-label="Pelaajan 1 tarkka tasoitus">
                         </label>
+                        <select id="playerGender1" class="player-gender-hidden" aria-label="Pelaajan 1 sukupuoli" hidden>
+                            <option value="Miehet" selected>M</option>
+                            <option value="Naiset">N</option>
+                        </select>
                         <label>Tii
                             <select id="playerTee1" aria-label="Pelaajan 1 tii"><option value="">Valitse tii</option></select>
                         </label>
@@ -62,12 +69,19 @@
                         </div>
                     </div>
                     <div class="player-round-setting player-column" data-player="2">
-                        <label>Nimi
-                            <input type="text" class="player-name" id="name2" value="" placeholder="P2" maxlength="12" aria-label="Pelaajan 2 nimi">
+                        <label class="player-name-label">Nimi
+                            <span class="player-name-wrap">
+                                <input type="text" class="player-name" id="name2" value="" placeholder="P2" maxlength="12" aria-label="Pelaajan 2 nimi">
+                                <button type="button" class="player-gender-trigger" data-player="2" aria-label="Valitse pelaajan 2 M tai N"></button>
+                            </span>
                         </label>
                         <label>Tarkka HCP
                             <input type="number" inputmode="decimal" step="0.1" min="-10" max="54" id="playerHcp2" placeholder="0,0" aria-label="Pelaajan 2 tarkka tasoitus">
                         </label>
+                        <select id="playerGender2" class="player-gender-hidden" aria-label="Pelaajan 2 sukupuoli" hidden>
+                            <option value="Miehet" selected>M</option>
+                            <option value="Naiset">N</option>
+                        </select>
                         <label>Tii
                             <select id="playerTee2" aria-label="Pelaajan 2 tii"><option value="">Valitse tii</option></select>
                         </label>
@@ -77,12 +91,19 @@
                         </div>
                     </div>
                     <div class="player-round-setting player-column" data-player="3">
-                        <label>Nimi
-                            <input type="text" class="player-name" id="name3" value="" placeholder="P3" maxlength="12" aria-label="Pelaajan 3 nimi">
+                        <label class="player-name-label">Nimi
+                            <span class="player-name-wrap">
+                                <input type="text" class="player-name" id="name3" value="" placeholder="P3" maxlength="12" aria-label="Pelaajan 3 nimi">
+                                <button type="button" class="player-gender-trigger" data-player="3" aria-label="Valitse pelaajan 3 M tai N"></button>
+                            </span>
                         </label>
                         <label>Tarkka HCP
                             <input type="number" inputmode="decimal" step="0.1" min="-10" max="54" id="playerHcp3" placeholder="0,0" aria-label="Pelaajan 3 tarkka tasoitus">
                         </label>
+                        <select id="playerGender3" class="player-gender-hidden" aria-label="Pelaajan 3 sukupuoli" hidden>
+                            <option value="Miehet" selected>M</option>
+                            <option value="Naiset">N</option>
+                        </select>
                         <label>Tii
                             <select id="playerTee3" aria-label="Pelaajan 3 tii"><option value="">Valitse tii</option></select>
                         </label>
@@ -92,12 +113,19 @@
                         </div>
                     </div>
                     <div class="player-round-setting player-column" data-player="4">
-                        <label>Nimi
-                            <input type="text" class="player-name" id="name4" value="" placeholder="P4" maxlength="12" aria-label="Pelaajan 4 nimi">
+                        <label class="player-name-label">Nimi
+                            <span class="player-name-wrap">
+                                <input type="text" class="player-name" id="name4" value="" placeholder="P4" maxlength="12" aria-label="Pelaajan 4 nimi">
+                                <button type="button" class="player-gender-trigger" data-player="4" aria-label="Valitse pelaajan 4 M tai N"></button>
+                            </span>
                         </label>
                         <label>Tarkka HCP
                             <input type="number" inputmode="decimal" step="0.1" min="-10" max="54" id="playerHcp4" placeholder="0,0" aria-label="Pelaajan 4 tarkka tasoitus">
                         </label>
+                        <select id="playerGender4" class="player-gender-hidden" aria-label="Pelaajan 4 sukupuoli" hidden>
+                            <option value="Miehet" selected>M</option>
+                            <option value="Naiset">N</option>
+                        </select>
                         <label>Tii
                             <select id="playerTee4" aria-label="Pelaajan 4 tii"><option value="">Valitse tii</option></select>
                         </label>
@@ -122,15 +150,28 @@
             <p class="course-data-status" id="courseDataStatus">Ladataan kenttädataa…</p>
             <p class="selected-course-info" id="selectedCourseInfo">Valitse kenttä ja pelaajakohtaiset tiit.</p>
 
-            <label class="section-help">Aloitusreikä
-                <input id="startHoleInput" type="number" inputmode="numeric" min="1" max="18" placeholder="1" aria-label="Aloitusreikä" style="width:90px;padding:8px;border-radius:8px;border:1px solid #cfd5cf;">
-            </label>
+            <div class="round-length-settings" aria-label="Kierroksen pituus ja aloitusreikä">
+                <fieldset class="round-length-fieldset">
+                    <legend>Kierroksen pituus</legend>
+                    <div class="round-length-options">
+                        <label class="round-length-option"><input type="radio" name="roundHoleCountChoice" value="9"><span>9 reikää</span></label>
+                        <label class="round-length-option"><input type="radio" name="roundHoleCountChoice" value="18" checked><span>18 reikää</span></label>
+                    </div>
+                    <select id="roundHoleCount" aria-label="Kierroksen pituus" class="round-hole-count-hidden">
+                        <option value="18" selected>18 reikää</option>
+                        <option value="9">9 reikää</option>
+                    </select>
+                </fieldset>
+                <label class="section-help round-start-hole">Aloitusreikä
+                    <input id="startHoleInput" type="number" inputmode="numeric" min="1" max="18" placeholder="1" aria-label="Aloitusreikä">
+                </label>
+            </div>
         </section>
 
         <section class="card next-hole-box next-hole-card" id="nextHoleCard">
             <div>
-                <div class="next-hole-label">Aloitusreikä</div>
-                <div class="muted">Anna aloitusreikä ennen ensimmäistä kirjausta.</div>
+                <div class="next-hole-label" id="activeHoleLabel">Aloitusreikä</div>
+                <div class="muted" id="activeHoleHelp">Anna aloitusreikä ennen ensimmäistä kirjausta.</div>
             </div>
 
             <div class="next-hole-number" id="nextHole">1</div>
@@ -152,7 +193,7 @@
             </div>
 
             <div class="compact-hole-line">
-                <span>Seuraava reikä</span>
+                <span id="compactHoleLabel">Nyt pelataan</span>
                 <strong id="compactNextHole">1</strong>
             </div>
 
@@ -180,6 +221,68 @@
                         onclick="saveCompletedRound()">
                     💾 Tallenna tarkistettu kierros
                 </button>
+            </div>
+        </section>
+
+        <section class="card gps-card" id="gpsCard" aria-labelledby="gpsTitle">
+            <div class="gps-heading-row">
+                <h2 class="section-title" id="gpsTitle">GPS</h2>
+                <span class="gps-state-badge gps-state-off" id="gpsStateBadge">GPS pois käytöstä</span>
+            </div>
+
+            <button type="button" class="action-button gps-toggle-button" id="gpsToggleButton" onclick="toggleGps()">
+                📍 Salli GPS
+            </button>
+
+            <div id="gpsDetails" hidden>
+            <p class="gps-message" id="gpsMessage" role="status" aria-live="polite">
+                GPS ei ole käytössä. Sijaintia ei tallenneta.
+            </p>
+
+            <div class="gps-green-panel" aria-label="Golf-GPS">
+                <div class="gps-course-data-line">
+                    <span>GPS-kenttädata</span>
+                    <strong id="gpsCourseDataStatus">Ei ladattu</strong>
+                </div>
+                <div class="gps-green-center-box gps-green-fcb-box">
+                    <div class="gps-green-hole-heading">
+                        <span>Green</span>
+                        <small>Reikä <strong id="gpsGreenHole">1</strong></small>
+                    </div>
+                    <div class="gps-green-fcb-grid" aria-label="Green Front Center Back etäisyydet">
+                        <div><small>Front</small><strong class="gps-green-distance" id="gpsGreenFrontDistance">—</strong></div>
+                        <div><small>Center</small><strong class="gps-green-distance" id="gpsGreenCenterDistance">—</strong></div>
+                        <div><small>Back</small><strong class="gps-green-distance" id="gpsGreenBackDistance">—</strong></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gps-data-grid" aria-label="GPS-tiedot">
+                <div class="gps-data-item">
+                    <span>Status</span>
+                    <strong id="gpsStatus">Ei käytössä</strong>
+                </div>
+                <div class="gps-data-item">
+                    <span>Tarkkuus</span>
+                    <strong id="gpsAccuracy">—</strong>
+                </div>
+                <div class="gps-data-item">
+                    <span>Lat</span>
+                    <strong id="gpsLatitude">—</strong>
+                </div>
+                <div class="gps-data-item">
+                    <span>Lon</span>
+                    <strong id="gpsLongitude">—</strong>
+                </div>
+                <div class="gps-data-item">
+                    <span>Mittausaika</span>
+                    <strong id="gpsUpdatedAt">—</strong>
+                </div>
+                <div class="gps-data-item">
+                    <span>Mittauksen ikä</span>
+                    <strong id="gpsPositionAge">—</strong>
+                </div>
+            </div>
             </div>
         </section>
 
@@ -335,7 +438,7 @@
             <summary>Tietoja sovelluksesta</summary>
             <div class="about-content">
                 <strong>Golf Voice Scorecard AI</strong>
-                <span>Versio 3.7.5 · Field Test Edition</span>
+                <span>Versio 3.7.6 · Field Test Edition</span>
                 <span class="about-signature">Petri Suokas<br>AI Golf Apps</span>
                 <span>© 2026</span>
             </div>
@@ -346,6 +449,20 @@
             <strong>AI Golf Apps</strong>
         </footer>
     </main>
+
+
+    <div class="modal-backdrop player-gender-modal" id="playerGenderModal" role="dialog"
+         aria-modal="true" aria-labelledby="playerGenderModalTitle">
+        <div class="modal-card player-gender-modal-card">
+            <h2 id="playerGenderModalTitle">Pelaajan M/N</h2>
+            <p id="playerGenderModalPlayer" class="muted">Pelaaja</p>
+            <div class="player-gender-modal-actions">
+                <button type="button" class="action-button player-gender-choice" data-gender="Miehet">M</button>
+                <button type="button" class="action-button player-gender-choice" data-gender="Naiset">N</button>
+            </div>
+            <button type="button" class="action-button" id="playerGenderModalCancel">Peruuta</button>
+        </div>
+    </div>
 
     <div class="modal-backdrop" id="roundCompleteModal" role="dialog"
          aria-modal="true" aria-labelledby="roundCompleteTitle">
@@ -406,7 +523,22 @@
         </div>
     </div>
 
-    <script src="app.js?v=3.7.5" defer></script>
+    <script>
+document.addEventListener("DOMContentLoaded", () => {
+    const select = document.getElementById("roundHoleCount");
+    const choices = document.querySelectorAll('input[name="roundHoleCountChoice"]');
+    if (!select || !choices.length) return;
+    const sync = () => choices.forEach(c => c.checked = c.value === select.value);
+    choices.forEach(c => c.addEventListener("change", () => {
+        if (!c.checked) return;
+        select.value = c.value;
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+    }));
+    select.addEventListener("change", sync);
+    sync();
+});
+</script>
+<script src="app.js?v=3.7.6" defer></script>
 
 </body>
 </html>

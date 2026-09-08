@@ -1,0 +1,138 @@
+[
+  {
+    "name": "Porvoo Golf",
+    "courseId": "porvoogolf",
+    "country": "FI",
+    "lat": 60.4218,
+    "lon": 25.6952,
+    "radius": 3200
+  },
+  {
+    "name": "Gumböle Golf",
+    "courseId": "gumbole",
+    "country": "FI",
+    "lat": 60.236,
+    "lon": 24.615,
+    "radius": 3200
+  },
+  {
+    "name": "Peurunka Golf",
+    "courseId": "peurunkagolf",
+    "country": "FI",
+    "lat": 62.405,
+    "lon": 25.925,
+    "radius": 3200
+  },
+  {
+    "name": "Keimola Saras",
+    "courseId": "keimola-saras",
+    "country": "FI",
+    "lat": 60.306,
+    "lon": 24.778,
+    "radius": 3200
+  },
+  {
+    "name": "Tuusulan Golfklubi",
+    "courseId": "tuusulangolf",
+    "country": "FI",
+    "lat": 60.415512,
+    "lon": 25.049838,
+    "radius": 3200
+  },
+  {
+    "name": "Hyvinkää Golf",
+    "courseId": "hyvigolf",
+    "country": "FI",
+    "lat": 60.657279,
+    "lon": 24.817359,
+    "radius": 3200
+  },
+  {
+    "name": "Nurmijärvi AB",
+    "courseId": "nurmijarvi-ab",
+    "country": "FI",
+    "lat": 60.5008,
+    "lon": 24.5737,
+    "radius": 3200
+  },
+  {
+    "name": "Nurmijärvi AC",
+    "courseId": "nurmijarvi-ac",
+    "country": "FI",
+    "lat": 60.5008,
+    "lon": 24.5737,
+    "radius": 3200
+  },
+  {
+    "name": "Nurmijärvi BA",
+    "courseId": "nurmijarvi-ba",
+    "country": "FI",
+    "lat": 60.5008,
+    "lon": 24.5737,
+    "radius": 3200
+  },
+  {
+    "name": "Nurmijärvi BC",
+    "courseId": "nurmijarvi-bc",
+    "country": "FI",
+    "lat": 60.5008,
+    "lon": 24.5737,
+    "radius": 3200
+  },
+  {
+    "name": "Nurmijärvi CA",
+    "courseId": "nurmijarvi-ca",
+    "country": "FI",
+    "lat": 60.5008,
+    "lon": 24.5737,
+    "radius": 3200
+  },
+  {
+    "name": "Nurmijärvi CB",
+    "courseId": "nurmijarvi-cb",
+    "country": "FI",
+    "lat": 60.5008,
+    "lon": 24.5737,
+    "radius": 3200
+  },
+  {
+    "name": "Kytäjä South East",
+    "courseId": "kytaja-se",
+    "country": "FI",
+    "lat": 60.6088793,
+    "lon": 24.6208438,
+    "radius": 3200
+  },
+  {
+    "name": "Kytäjä North West",
+    "courseId": "kytaja-nw",
+    "country": "FI",
+    "lat": 60.6088793,
+    "lon": 24.6208438,
+    "radius": 3200
+  },
+  {
+    "name": "Koto Golf",
+    "courseId": "koto-golf",
+    "country": "FI",
+    "lat": 60.4756,
+    "lon": 25.371,
+    "radius": 3200
+  },
+  {
+    "name": "St. Laurence Golf – Kalkki-Petteri",
+    "courseId": "stlaurence-kalkki-petteri",
+    "country": "FI",
+    "lat": 60.220251,
+    "lon": 24.05232,
+    "radius": 3200
+  },
+  {
+    "name": "St. Laurence Golf – Pyhä Lauri",
+    "courseId": "stlaurence-pyha-lauri",
+    "country": "FI",
+    "lat": 60.220251,
+    "lon": 24.05232,
+    "radius": 3200
+  }
+]

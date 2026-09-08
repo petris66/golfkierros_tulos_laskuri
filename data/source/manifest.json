@@ -1,0 +1,153 @@
+{
+  "version": "1.0.0",
+  "updated": "2026-09-06",
+  "courses": [
+    {
+      "courseId": "gumbole",
+      "course": "Gumböle",
+      "country": "FI",
+      "file": "FI/gumbole.json",
+      "status": "verified_from_header"
+    },
+    {
+      "courseId": "hirvihaara",
+      "course": "Hirvihaara",
+      "country": "FI",
+      "file": "FI/hirvihaara.json",
+      "status": "verified_from_header"
+    },
+    {
+      "courseId": "hyvigolf",
+      "course": "Hyvinkää Golf",
+      "country": "FI",
+      "file": "FI/hyvigolf.json",
+      "status": "verified_from_header"
+    },
+    {
+      "courseId": "keimola-kirkka",
+      "course": "Keimola Kirkka",
+      "country": "FI",
+      "file": "FI/keimola-kirkka.json",
+      "status": "verified_from_header"
+    },
+    {
+      "courseId": "keimola-saras",
+      "course": "Keimola Saras",
+      "country": "FI",
+      "file": "FI/keimola-saras.json",
+      "status": "verified_from_header"
+    },
+    {
+      "courseId": "nurmijarvi-ab",
+      "course": "Nurmijärvi AB",
+      "country": "FI",
+      "file": "FI/nurmijarvi-ab.json",
+      "status": "verified_from_header"
+    },
+    {
+      "courseId": "nurmijarvi-ac",
+      "course": "Nurmijärvi AC",
+      "country": "FI",
+      "file": "FI/nurmijarvi-ac.json",
+      "status": "verified_from_header"
+    },
+    {
+      "courseId": "nurmijarvi-ba",
+      "course": "Nurmijärvi BA",
+      "country": "FI",
+      "file": "FI/nurmijarvi-ba.json",
+      "status": "mapped_reverse_loop"
+    },
+    {
+      "courseId": "nurmijarvi-bc",
+      "course": "Nurmijärvi BC",
+      "country": "FI",
+      "file": "FI/nurmijarvi-bc.json",
+      "status": "verified_from_header"
+    },
+    {
+      "courseId": "nurmijarvi-ca",
+      "course": "Nurmijärvi CA",
+      "country": "FI",
+      "file": "FI/nurmijarvi-ca.json",
+      "status": "mapped_reverse_loop"
+    },
+    {
+      "courseId": "nurmijarvi-cb",
+      "course": "Nurmijärvi CB",
+      "country": "FI",
+      "file": "FI/nurmijarvi-cb.json",
+      "status": "mapped_reverse_loop"
+    },
+    {
+      "courseId": "peurunkagolf",
+      "course": "Peurunkagolf",
+      "country": "FI",
+      "file": "FI/peurunkagolf.json",
+      "status": "verified_from_header"
+    },
+    {
+      "courseId": "porvoogolf",
+      "course": "Porvoo Golf",
+      "country": "FI",
+      "file": "FI/porvoogolf.json",
+      "status": "provisional_2026_new_holes"
+    },
+    {
+      "courseId": "shg-lakisto",
+      "course": "SHG Lakisto",
+      "country": "FI",
+      "file": "FI/shg-lakisto.json",
+      "status": "verified_from_header"
+    },
+    {
+      "courseId": "shg-luukki",
+      "course": "SHG Luukki",
+      "country": "FI",
+      "file": "FI/shg-luukki.json",
+      "status": "verified_from_header"
+    },
+    {
+      "courseId": "stlaurence-kalkki-petteri",
+      "course": "St. Laurence Golf – Kalkki-Petteri",
+      "country": "FI",
+      "file": "FI/stlaurence-kalkki-petteri.json",
+      "status": "verified_official_2026"
+    },
+    {
+      "courseId": "stlaurence-pyha-lauri",
+      "course": "St. Laurence Golf – Pyhä Lauri",
+      "country": "FI",
+      "file": "FI/stlaurence-pyha-lauri.json",
+      "status": "verified_official_2026"
+    },
+    {
+      "courseId": "tuusula",
+      "course": "Tuusula",
+      "country": "FI",
+      "file": "FI/tuusula.json",
+      "status": "verified_from_header"
+    },
+    {
+      "courseId": "kytaja-se",
+      "course": "Kytäjä South East",
+      "country": "FI",
+      "file": "FI/kytaja-se.json",
+      "status": "verified_from_header"
+    },
+    {
+      "courseId": "kytaja-nw",
+      "course": "Kytäjä North West",
+      "country": "FI",
+      "file": "FI/kytaja-nw.json",
+      "status": "verified_from_header"
+    },
+    {
+      "courseId": "koto-golf",
+      "course": "Koto Golf",
+      "country": "FI",
+      "file": "FI/koto-golf.json",
+      "status": "verified_2026_rating_legacy_scorecard_geometry"
+    }
+  ]
+}

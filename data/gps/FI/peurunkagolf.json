@@ -1,0 +1,856 @@
+{
+  "schemaVersion": "1.2",
+  "libraryVersion": "1.0.0",
+  "courseId": "peurunkagolf",
+  "course": "Laukaan Peurunkagolf",
+  "country": "FI",
+  "mode": "green-front-center-back",
+  "generatedAt": "2026-08-09T19:34:05.179Z",
+  "source": "OpenStreetMap / Overpass + Course Library",
+  "partial": false,
+  "unavailableHoles": [],
+  "fieldValidation": {
+    "status": "pending",
+    "referenceDevice": "Garmin",
+    "notes": "Verify Green Front / Center / Back distances on course before marking validated."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "greenFront": {
+        "lat": 62.4388214,
+        "lon": 25.8618287
+      },
+      "greenCenter": {
+        "lat": 62.4388764,
+        "lon": 25.8615447
+      },
+      "greenBack": {
+        "lat": 62.4389419,
+        "lon": 25.8613619
+      },
+      "source": {
+        "provider": "OpenStreetMap",
+        "osmElement": "way/878137546",
+        "assignedWith": "golf=hole auto-match",
+        "matchDistanceMeters": 1,
+        "edgeMethod": "green-geometry + golf-hole approach direction",
+        "verified": false
+      }
+    },
+    {
+      "hole": 2,
+      "greenFront": {
+        "lat": 62.4398896,
+        "lon": 25.8546473
+      },
+      "greenCenter": {
+        "lat": 62.4398775,
+        "lon": 25.8542624
+      },
+      "greenBack": {
+        "lat": 62.4399542,
+        "lon": 25.8540314
+      },
+      "source": {
+        "provider": "OpenStreetMap",
+        "osmElement": "way/878173771",
+        "assignedWith": "golf=hole auto-match",
+        "matchDistanceMeters": 6,
+        "edgeMethod": "green-geometry + golf-hole approach direction",
+        "verified": false
+      }
+    },
+    {
+      "hole": 3,
+      "greenFront": {
+        "lat": 62.4402172,
+        "lon": 25.8567305
+      },
+      "greenCenter": {
+        "lat": 62.4402445,
+        "lon": 25.8570997
+      },
+      "greenBack": {
+        "lat": 62.4402298,
+        "lon": 25.8574716
+      },
+      "source": {
+        "provider": "OpenStreetMap",
+        "osmElement": "way/878173777",
+        "assignedWith": "golf=hole auto-match",
+        "matchDistanceMeters": 3,
+        "edgeMethod": "green-geometry + golf-hole approach direction",
+        "verified": false
+      }
+    },
+    {
+      "hole": 4,
+      "greenFront": {
+        "lat": 62.4399216,
+        "lon": 25.8623729
+      },
+      "greenCenter": {
+        "lat": 62.4398781,
+        "lon": 25.8627211
+      },
+      "greenBack": {
+        "lat": 62.4398683,
+        "lon": 25.8630883
+      },
+      "source": {
+        "provider": "OpenStreetMap",
+        "osmElement": "way/878173785",
+        "assignedWith": "golf=hole auto-match",
+        "matchDistanceMeters": 3,
+        "edgeMethod": "green-geometry + golf-hole approach direction",
+        "verified": false
+      }
+    },
+    {
+      "hole": 5,
+      "greenFront": {
+        "lat": 62.4420643,
+        "lon": 25.8562115
+      },
+      "greenCenter": {
+        "lat": 62.4421341,
+        "lon": 25.8559935
+      },
+      "greenBack": {
+        "lat": 62.4421079,
+        "lon": 25.8557607
+      },
+      "source": {
+        "provider": "OpenStreetMap",
+        "osmElement": "way/878173795",
+        "assignedWith": "golf=hole auto-match",
+        "matchDistanceMeters": 1,
+        "edgeMethod": "green-geometry + golf-hole approach direction",
+        "verified": false
+      }
+    },
+    {
+      "hole": 6,
+      "greenFront": {
+        "lat": 62.4421565,
+        "lon": 25.8617919
+      },
+      "greenCenter": {
+        "lat": 62.4422028,
+        "lon": 25.8620391
+      },
+      "greenBack": {
+        "lat": 62.4422075,
+        "lon": 25.8622879
+      },
+      "source": {
+        "provider": "OpenStreetMap",
+        "osmElement": "way/878173799",
+        "assignedWith": "golf=hole auto-match",
+        "matchDistanceMeters": 1,
+        "edgeMethod": "green-geometry + golf-hole approach direction",
+        "verified": false
+      }
+    },
+    {
+      "hole": 7,
+      "greenFront": {
+        "lat": 62.4411462,
+        "lon": 25.8644459
+      },
+      "greenCenter": {
+        "lat": 62.4409856,
+        "lon": 25.8646168
+      },
+      "greenBack": {
+        "lat": 62.4407994,
+        "lon": 25.8647479
+      },
+      "source": {
+        "provider": "OpenStreetMap",
+        "osmElement": "way/878173805",
+        "assignedWith": "golf=hole auto-match",
+        "matchDistanceMeters": 2,
+        "edgeMethod": "green-geometry + golf-hole approach direction",
+        "verified": false
+      }
+    },
+    {
+      "hole": 8,
+      "greenFront": {
+        "lat": 62.4382566,
+        "lon": 25.8667887
+      },
+      "greenCenter": {
+        "lat": 62.4381581,
+        "lon": 25.8670232
+      },
+      "greenBack": {
+        "lat": 62.438036,
+        "lon": 25.8672505
+      },
+      "source": {
+        "provider": "OpenStreetMap",
+        "osmElement": "way/878173812",
+        "assignedWith": "golf=hole auto-match",
+        "matchDistanceMeters": 7,
+        "edgeMethod": "green-geometry + golf-hole approach direction",
+        "verified": false
+      }
+    },
+    {
+      "hole": 9,
+      "greenFront": {
+        "lat": 62.4357527,
+        "lon": 25.8698224
+      },
+      "greenCenter": {
+        "lat": 62.4356657,
+        "lon": 25.8700119
+      },
+      "greenBack": {
+        "lat": 62.435564,
+        "lon": 25.8701923
+      },
+      "source": {
+        "provider": "OpenStreetMap",
+        "osmElement": "way/878137551",
+        "assignedWith": "golf=hole auto-match",
+        "matchDistanceMeters": 2,
+        "edgeMethod": "green-geometry + golf-hole approach direction",
+        "verified": false
+      }
+    },
+    {
+      "hole": 10,
+      "greenFront": {
+        "lat": 62.4304557,
+        "lon": 25.8727086
+      },
+      "greenCenter": {
+        "lat": 62.4303811,
+        "lon": 25.8728776
+      },
+      "greenBack": {
+        "lat": 62.4302517,
+        "lon": 25.8729783
+      },
+      "source": {
+        "provider": "OpenStreetMap",
+        "osmElement": "way/878137558",
+        "assignedWith": "golf=hole auto-match",
+        "matchDistanceMeters": 6,
+        "edgeMethod": "green-geometry + golf-hole approach direction",
+        "verified": false
+      }
+    },
+    {
+      "hole": 11,
+      "greenFront": {
+        "lat": 62.4290793,
+        "lon": 25.8709106
+      },
+      "greenCenter": {
+        "lat": 62.4290216,
+        "lon": 25.8705308
+      },
+      "greenBack": {
+        "lat": 62.4289249,
+        "lon": 25.8701815
+      },
+      "source": {
+        "provider": "OpenStreetMap",
+        "osmElement": "way/878198944",
+        "assignedWith": "golf=hole auto-match",
+        "matchDistanceMeters": 8,
+        "edgeMethod": "green-geometry + golf-hole approach direction",
+        "verified": false
+      }
+    },
+    {
+      "hole": 12,
+      "greenFront": {
+        "lat": 62.4256316,
+        "lon": 25.8693947
+      },
+      "greenCenter": {
+        "lat": 62.4255043,
+        "lon": 25.8691177
+      },
+      "greenBack": {
+        "lat": 62.4253676,
+        "lon": 25.868812
+      },
+      "source": {
+        "provider": "OpenStreetMap",
+        "osmElement": "way/878198951",
+        "assignedWith": "golf=hole auto-match",
+        "matchDistanceMeters": 10,
+        "edgeMethod": "green-geometry + golf-hole approach direction",
+        "verified": false
+      }
+    },
+    {
+      "hole": 13,
+      "greenFront": {
+        "lat": 62.4222231,
+        "lon": 25.8709836
+      },
+      "greenCenter": {
+        "lat": 62.4220576,
+        "lon": 25.8710424
+      },
+      "greenBack": {
+        "lat": 62.4218763,
+        "lon": 25.8711249
+      },
+      "source": {
+        "provider": "OpenStreetMap",
+        "osmElement": "way/878198959",
+        "assignedWith": "golf=hole auto-match",
+        "matchDistanceMeters": 8,
+        "edgeMethod": "green-geometry + golf-hole approach direction",
+        "verified": false
+      }
+    },
+    {
+      "hole": 14,
+      "greenFront": {
+        "lat": 62.4254584,
+        "lon": 25.8654658
+      },
+      "greenCenter": {
+        "lat": 62.4255986,
+        "lon": 25.8654639
+      },
+      "greenBack": {
+        "lat": 62.4257251,
+        "lon": 25.865469
+      },
+      "source": {
+        "provider": "OpenStreetMap",
+        "osmElement": "way/878198965",
+        "assignedWith": "golf=hole auto-match",
+        "matchDistanceMeters": 2,
+        "edgeMethod": "green-geometry + golf-hole approach direction",
+        "verified": false
+      }
+    },
+    {
+      "hole": 15,
+      "greenFront": {
+        "lat": 62.428104346594786,
+        "lon": 25.86950016741362
+      },
+      "greenCenter": {
+        "lat": 62.42822104649396,
+        "lon": 25.869846271603645
+      },
+      "greenBack": {
+        "lat": 62.42832036519852,
+        "lon": 25.870117252403606
+      },
+      "source": {
+        "provider": "Manual",
+        "osmElement": null,
+        "assignedWith": "GPS Builder manual map click",
+        "matchDistanceMeters": null,
+        "edgeMethod": "manual-front-center-back",
+        "verified": false
+      }
+    },
+    {
+      "hole": 16,
+      "greenFront": {
+        "lat": 62.42994790349633,
+        "lon": 25.86995338304768
+      },
+      "greenCenter": {
+        "lat": 62.43012294238757,
+        "lon": 25.87020290002188
+      },
+      "greenBack": {
+        "lat": 62.43032280823796,
+        "lon": 25.870404123388173
+      },
+      "source": {
+        "provider": "Manual",
+        "osmElement": null,
+        "assignedWith": "GPS Builder manual map click",
+        "matchDistanceMeters": null,
+        "edgeMethod": "manual-front-center-back",
+        "verified": false
+      }
+    },
+    {
+      "hole": 17,
+      "greenFront": {
+        "lat": 62.4318354,
+        "lon": 25.864953
+      },
+      "greenCenter": {
+        "lat": 62.4318578,
+        "lon": 25.86464
+      },
+      "greenBack": {
+        "lat": 62.4318762,
+        "lon": 25.8642828
+      },
+      "source": {
+        "provider": "OpenStreetMap",
+        "osmElement": "way/878198987",
+        "assignedWith": "golf=hole auto-match",
+        "matchDistanceMeters": 6,
+        "edgeMethod": "green-geometry + golf-hole approach direction",
+        "verified": false
+      }
+    },
+    {
+      "hole": 18,
+      "greenFront": {
+        "lat": 62.4337106,
+        "lon": 25.8674591
+      },
+      "greenCenter": {
+        "lat": 62.4338968,
+        "lon": 25.8675777
+      },
+      "greenBack": {
+        "lat": 62.4339971,
+        "lon": 25.867756
+      },
+      "source": {
+        "provider": "OpenStreetMap",
+        "osmElement": "way/878137566",
+        "assignedWith": "golf=hole auto-match",
+        "matchDistanceMeters": 2,
+        "edgeMethod": "green-geometry + golf-hole approach direction",
+        "verified": false
+      }
+    }
+  ],
+  "obstacles": [
+    {
+      "hole": 1,
+      "type": "bunker",
+      "point": {
+        "lat": 62.43708910454545,
+        "lon": 25.865306877272726
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878137542
+      }
+    },
+    {
+      "hole": 1,
+      "type": "bunker",
+      "point": {
+        "lat": 62.43822193600001,
+        "lon": 25.86263541199999
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878137543
+      }
+    },
+    {
+      "hole": 1,
+      "type": "bunker",
+      "point": {
+        "lat": 62.43843889999999,
+        "lon": 25.86251766111111
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878137544
+      }
+    },
+    {
+      "hole": 1,
+      "type": "bunker",
+      "point": {
+        "lat": 62.43897007368422,
+        "lon": 25.86181218947368
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878137545
+      }
+    },
+    {
+      "hole": 2,
+      "type": "bunker",
+      "point": {
+        "lat": 62.439781999999994,
+        "lon": 25.854613569999998
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878173769
+      }
+    },
+    {
+      "hole": 2,
+      "type": "bunker",
+      "point": {
+        "lat": 62.43976373333332,
+        "lon": 25.854240053333335
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878173770
+      }
+    },
+    {
+      "hole": 3,
+      "type": "bunker",
+      "point": {
+        "lat": 62.44037389411765,
+        "lon": 25.85695740588235
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878173776
+      }
+    },
+    {
+      "hole": 4,
+      "type": "bunker",
+      "point": {
+        "lat": 62.43979503076922,
+        "lon": 25.86110241153846
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878173782
+      }
+    },
+    {
+      "hole": 4,
+      "type": "bunker",
+      "point": {
+        "lat": 62.43979589999998,
+        "lon": 25.86238237916667
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878173783
+      }
+    },
+    {
+      "hole": 4,
+      "type": "bunker",
+      "point": {
+        "lat": 62.43974560909092,
+        "lon": 25.862853372727272
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878173784
+      }
+    },
+    {
+      "hole": 5,
+      "type": "bunker",
+      "point": {
+        "lat": 62.4419370090909,
+        "lon": 25.855969854545457
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878173792
+      }
+    },
+    {
+      "hole": 5,
+      "type": "bunker",
+      "point": {
+        "lat": 62.44218467272728,
+        "lon": 25.855714463636364
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878173793
+      }
+    },
+    {
+      "hole": 5,
+      "type": "bunker",
+      "point": {
+        "lat": 62.442322787500004,
+        "lon": 25.856068043750003
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878173794
+      }
+    },
+    {
+      "hole": 7,
+      "type": "bunker",
+      "point": {
+        "lat": 62.441013031818194,
+        "lon": 25.864840209090904
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878173804
+      }
+    },
+    {
+      "hole": 8,
+      "type": "bunker",
+      "point": {
+        "lat": 62.4391435,
+        "lon": 25.865221868181823
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878173810
+      }
+    },
+    {
+      "hole": 8,
+      "type": "bunker",
+      "point": {
+        "lat": 62.43816393333332,
+        "lon": 25.86668366666667
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878173811
+      }
+    },
+    {
+      "hole": 9,
+      "type": "bunker",
+      "point": {
+        "lat": 62.43516414166666,
+        "lon": 25.870432225000002
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878234512
+      }
+    },
+    {
+      "hole": 10,
+      "type": "bunker",
+      "point": {
+        "lat": 62.430644694736834,
+        "lon": 25.87216201842105
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878137556
+      }
+    },
+    {
+      "hole": 10,
+      "type": "bunker",
+      "point": {
+        "lat": 62.43031086428573,
+        "lon": 25.87258628928571
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878137557
+      }
+    },
+    {
+      "hole": 11,
+      "type": "bunker",
+      "point": {
+        "lat": 62.429209676470585,
+        "lon": 25.87080379411764
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878198943
+      }
+    },
+    {
+      "hole": 12,
+      "type": "water",
+      "point": {
+        "lat": 62.42587398800001,
+        "lon": 25.869058692000003
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878198952
+      }
+    },
+    {
+      "hole": 13,
+      "type": "water",
+      "point": {
+        "lat": 62.424024717647065,
+        "lon": 25.870531629411765
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878198958
+      }
+    },
+    {
+      "hole": 14,
+      "type": "bunker",
+      "point": {
+        "lat": 62.42480248260869,
+        "lon": 25.86717339130434
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878198963
+      }
+    },
+    {
+      "hole": 14,
+      "type": "water",
+      "point": {
+        "lat": 62.42530326086956,
+        "lon": 25.866269169565207
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878198964
+      }
+    },
+    {
+      "hole": 15,
+      "type": "water",
+      "point": {
+        "lat": 62.426327,
+        "lon": 25.866679268749998
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878198974
+      }
+    },
+    {
+      "hole": 17,
+      "type": "bunker",
+      "point": {
+        "lat": 62.43173186956521,
+        "lon": 25.864811743478253
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878198985
+      }
+    },
+    {
+      "hole": 17,
+      "type": "bunker",
+      "point": {
+        "lat": 62.431867808333344,
+        "lon": 25.865329820833335
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878198986
+      }
+    },
+    {
+      "hole": 17,
+      "type": "water",
+      "point": {
+        "lat": 62.43169771904765,
+        "lon": 25.868458119047617
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878198990
+      }
+    },
+    {
+      "hole": 18,
+      "type": "bunker",
+      "point": {
+        "lat": 62.43291476666668,
+        "lon": 25.86737530740741
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878137562
+      }
+    },
+    {
+      "hole": 18,
+      "type": "bunker",
+      "point": {
+        "lat": 62.433076195238094,
+        "lon": 25.867458466666665
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878137563
+      }
+    },
+    {
+      "hole": 18,
+      "type": "bunker",
+      "point": {
+        "lat": 62.433780180769226,
+        "lon": 25.86729676153846
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878137564
+      }
+    },
+    {
+      "hole": 18,
+      "type": "bunker",
+      "point": {
+        "lat": 62.43395783333334,
+        "lon": 25.86731715555556
+      },
+      "source": {
+        "type": "openstreetmap",
+        "osmType": "way",
+        "osmId": 878137565
+      }
+    }
+  ],
+  "obstacleReview": {
+    "source": "GPS Builder manual review",
+    "reviewMode": "reject-extras",
+    "generatedAt": "2026-08-20T18:40:42.488Z"
+  }
+}

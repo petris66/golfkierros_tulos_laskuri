@@ -1,0 +1,44 @@
+GPS Phase 2 — Peurunka Golf field validation (10.8.2026)
+
+Test result:
+
+- Android field test completed on Peurunka Golf.
+- Green Front / Center / Back distances worked correctly during a real round.
+- Distances were compared against GameBook and golf watch reference distances.
+- Differences were approximately 1–3 meters at 100 m and 150 m course markers.
+
+Result:
+
+- GPS green distance measurement validated for practical field use.
+- Current Front / Center / Back implementation approved for further development.
+
+Next steps:
+
+- Continue GPS development with course obstacles (bunkers and water hazards).
+- Expand course library after validation of the next GPS features.
+
+
+
+Feature 1.5.1 — Floating voice button, test 1
+
+Base:
+- v1.4.3 full scorecard version supplied by the user.
+
+Changed:
+- The voice button is fixed to the bottom of the screen while a round is active.
+- iPhone safe-area insets are respected.
+- Extra bottom space prevents holes 17–18, totals, and action buttons from being covered.
+- CSS and cache-busting query strings changed.
+
+Unchanged:
+- app.js contents.
+- Starting-hole logic.
+- 1–18 scorecard visibility logic.
+- First-nine summary logic.
+- Standings, speech recognition, scoring, saving, sharing, and round completion logic.
+
+Upload:
+- Replace index.html and style.css.
+- app.js is included and is byte-for-byte identical to the supplied working baseline.
+
+

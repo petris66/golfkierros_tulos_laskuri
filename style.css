@@ -1803,3 +1803,413 @@ body {
     scroll-margin-top: 28vh;
     scroll-margin-bottom: 42vh;
 }
+
+
+/* --- GPS package 1.1 --- */
+.gps-card {
+    position: relative;
+}
+
+.gps-heading-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.gps-heading-row .section-title {
+    flex: 1;
+}
+
+.gps-state-badge {
+    flex: 0 0 auto;
+    padding: 7px 10px;
+    border: 1px solid #c7d4c4;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.gps-state-off {
+    color: #59625b;
+    background: #f1f3f0;
+}
+
+.gps-state-loading {
+    color: #6d530d;
+    background: #fff5cf;
+    border-color: #e8d080;
+}
+
+.gps-state-on {
+    color: #175019;
+    background: #e4f4df;
+    border-color: #9fc49a;
+}
+
+.gps-state-error {
+    color: #7a1d1d;
+    background: #fff0f0;
+    border-color: #e0b3b3;
+}
+
+.gps-toggle-button {
+    width: 100%;
+    color: white;
+    background: linear-gradient(145deg, #2c7e28, #195119);
+    border-color: #1b501a;
+}
+
+.gps-toggle-button.gps-stop-button {
+    color: var(--ink);
+    background: #f7fbf4;
+    border-color: #afc6aa;
+}
+
+.gps-message {
+    margin: 12px 0;
+    padding: 11px 13px;
+    border: 1px solid #c6d9c1;
+    border-radius: 14px;
+    color: #486046;
+    background: #f2f8ef;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.gps-data-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+}
+
+.gps-data-item {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+    padding: 11px 12px;
+    border: 1px solid #d4dfd1;
+    border-radius: 14px;
+    background: #fbfdf9;
+}
+
+.gps-data-item span {
+    color: #60725f;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.gps-data-item strong {
+    overflow-wrap: anywhere;
+    color: var(--forest);
+    font-size: 15px;
+}
+
+.gps-data-item-wide {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 420px) {
+    .gps-heading-row {
+        display: block;
+    }
+
+    .gps-state-badge {
+        display: inline-block;
+        margin: -4px 0 12px;
+    }
+}
+
+/* GPS 1.1.7 - round length selector */
+.round-length-settings{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap}
+.round-length-fieldset{margin:0;padding:0;border:0}
+.round-length-fieldset legend{margin:0 0 5px;padding:0;font-size:.9rem;color:#5f6b63}
+.round-length-options{display:flex;gap:8px}
+.round-length-option{position:relative;cursor:pointer}
+.round-length-option input{position:absolute;opacity:0;pointer-events:none}
+.round-length-option span{display:block;padding:8px 12px;border:1px solid #cfd5cf;border-radius:8px;background:#fff;font-weight:600;white-space:nowrap}
+.round-length-option input:checked+span{border-color:#68776c;box-shadow:inset 0 0 0 1px #68776c;background:#f2f5f2}
+.round-length-option input:focus-visible+span{outline:2px solid currentColor;outline-offset:2px}
+.round-hole-count-hidden{display:none}
+.round-start-hole{margin-bottom:0}
+.round-start-hole input{display:block;width:90px;margin-top:5px;padding:8px;border-radius:8px;border:1px solid #cfd5cf}
+@media(max-width:520px){.round-length-options{gap:6px}.round-length-option span{padding:8px 10px}}
+
+
+/* Scorecard Safety 1.0.0 - clearer active hole */
+.round-active .next-hole-card {
+    border: 2px solid var(--forest-2);
+    box-shadow: 0 16px 38px rgba(23, 63, 24, .24);
+}
+
+.round-active .next-hole-label {
+    color: var(--forest);
+    font-size: 16px;
+    letter-spacing: .16em;
+}
+
+.round-active .next-hole-number {
+    transform: scale(1.06);
+}
+
+.round-active .compact-hole-line {
+    padding: 8px 10px;
+    border: 1px solid #9fc49a;
+    border-radius: 14px;
+    background: #edf7e9;
+}
+
+
+/* GPS Phase 2.0.0 - Green Center */
+.gps-green-panel {
+    display: grid;
+    gap: 10px;
+    margin: 14px 0;
+}
+
+.gps-course-data-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 12px;
+    border: 1px solid #c6d9c1;
+    border-radius: 14px;
+    background: #f6faf4;
+    font-size: 13px;
+}
+
+.gps-course-data-line strong {
+    color: var(--forest);
+    text-align: right;
+}
+
+.gps-green-center-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 16px;
+    border: 2px solid #8db487;
+    border-radius: 18px;
+    background: #edf7e9;
+}
+
+.gps-green-center-box > div {
+    display: grid;
+    gap: 3px;
+}
+
+.gps-green-center-box span {
+    color: var(--forest-2);
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.gps-green-center-box small {
+    color: #557254;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.gps-green-distance {
+    min-width: 112px;
+    color: var(--forest);
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 38px;
+    line-height: 1;
+    text-align: right;
+}
+
+@media (max-width: 500px) {
+    .gps-green-center-box {
+        padding: 13px 14px;
+    }
+
+    .gps-green-distance {
+        min-width: 96px;
+        font-size: 34px;
+    }
+}
+
+
+/* --- GPS Front / Center / Back --- */
+.gps-green-fcb-box {
+    display: grid;
+    gap: 12px;
+}
+
+.gps-green-hole-heading {
+    display: flex !important;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.gps-green-fcb-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    width: 100%;
+}
+
+.gps-green-fcb-grid > div {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+    padding: 10px 6px;
+    border: 1px solid #bfd2ba;
+    border-radius: 14px;
+    background: #f7fbf4;
+    text-align: center;
+}
+
+.gps-green-fcb-grid small {
+    text-transform: uppercase;
+}
+
+.gps-green-fcb-grid .gps-green-distance {
+    min-width: 0;
+    font-size: 30px;
+    text-align: center;
+}
+
+@media (max-width: 500px) {
+    .gps-green-fcb-grid {
+        gap: 5px;
+    }
+
+    .gps-green-fcb-grid > div {
+        padding: 9px 3px;
+    }
+
+    .gps-green-fcb-grid .gps-green-distance {
+        font-size: 25px;
+    }
+}
+
+
+/* --- Player gender popup v0.3: compact mobile row --- */
+.player-gender-hidden {
+    display: none !important;
+}
+
+.player-round-setting {
+    grid-template-columns: minmax(88px, 1.2fr) minmax(64px, .72fr) minmax(100px, 1fr) minmax(76px, .82fr);
+}
+
+.player-name-wrap {
+    position: relative;
+    display: block;
+    min-width: 0;
+}
+
+.player-name-wrap .player-name {
+    width: 100%;
+    padding-right: 42px;
+}
+
+.player-gender-trigger {
+    position: absolute;
+    top: 50%;
+    right: 4px;
+    transform: translateY(-50%);
+    min-width: 34px;
+    min-height: 30px;
+    padding: 2px 5px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: #557254;
+    font: inherit;
+    font-size: 10px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.player-gender-trigger.is-female {
+    color: var(--forest);
+    font-size: 12px;
+}
+
+.player-gender-modal {
+    display: none;
+}
+
+.player-gender-modal.show {
+    display: flex;
+}
+
+.player-gender-modal-card {
+    max-width: 320px;
+    text-align: center;
+}
+
+.player-gender-modal-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 14px 0 10px;
+}
+
+.player-gender-choice {
+    min-height: 54px;
+    font-size: 20px;
+    font-weight: 900;
+}
+
+@media (max-width: 500px) {
+    .player-round-setting {
+        grid-template-columns: minmax(82px, 1.18fr) minmax(58px, .68fr) minmax(92px, 1fr) minmax(70px, .78fr);
+        gap: 4px;
+        padding: 7px 5px;
+    }
+
+    .player-name-wrap .player-name {
+        padding-right: 36px !important;
+    }
+
+    .player-gender-trigger {
+        min-width: 30px;
+        min-height: 28px;
+        right: 3px;
+        padding: 1px 3px;
+        font-size: 9px;
+    }
+}
+
+
+/* --- Player gender selector v0.9 --- */
+.player-name-wrap .player-name {
+    padding-right: 8px !important;
+    cursor: text;
+}
+
+.player-gender-trigger {
+    display: none !important;
+}
+
+.player-gender-trigger.is-female {
+    display: block !important;
+    position: absolute;
+    top: 50%;
+    right: 4px;
+    transform: translateY(-50%);
+    min-width: 30px;
+    min-height: 30px;
+    padding: 1px 4px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.player-name-wrap:has(.player-gender-trigger.is-female) .player-name {
+    padding-right: 38px !important;
+}

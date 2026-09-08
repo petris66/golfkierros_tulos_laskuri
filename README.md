@@ -1,47 +1,25 @@
 # Golf Voice Scorecard AI
-## Current version
 
-v0.5.5
-
-### v0.5.5
-
-Live repository updated from tested development version v0.5.4.12.
-
-This release includes the tested features and fixes migrated from the development repository.
-
-This release includes the features and fixes from development version v0.5.4.12.
-
-Changes:
-- Updated application core files
-- Added extended course and tee data
-- Migrated tested development version to live repository
-- Fixed GitHub Pages case-sensitive data path
-- Verified iPhone compatibility
-## Current version
-
-v0.5.4.12
-
-## Latest update
-
-- Updated application files from development version
-- Added extended golf course and tee data
-- Fixed GitHub Pages case-sensitive data path
-- Verified iPhone compatibility
-  
 AI-assisted voice-controlled golf scorecard application.
 
 Golf Voice Scorecard AI is a mobile-first web application designed to make golf scoring faster and easier using voice commands.
 
 ## Project status
 
-This repository contains the live version of Golf Voice Scorecard AI.
+🚧 Under active development and testing.
+
+Current version:
+**v0.5.4.12**
 
 ## Main features
 
-- Voice-controlled golf score entry
-- Multi-player scoring
+- Voice-controlled score entry
+- 1–4 player support
 - 18-hole scorecard
 - Stroke play scoring
+- Stableford scoring
+- Player and tee management
+- Shareable scorecard images
 - Mobile-first design
 
 ## Technology
@@ -52,8 +30,6 @@ Built with:
 - JavaScript
 - Web Speech API
 - GitHub Pages
-
----
 
 ---
 
@@ -68,6 +44,13 @@ Projektirakenne:
 - `backup/` – omat varmuuskopiot
 
 Repository sisältää sovelluksen lähdekoodin ja tarvittavat resurssit.
+
+## Development history
+
+The project versioning has changed during development.
+Older versions below describe earlier development phases.
+Current development follows the v0.5.x version series.
+
 
 ## v3.3
 
@@ -180,36 +163,18 @@ Poista vanha kotinäytön kuvake ja lisää sovellus Safari-valikosta uudelleen,
 - Sovelluksen kierroksen aikainen voittajan ilmoitus säilyy ennallaan.
 - Jakokuvan korkeutta tiivistettiin poistuneen yhteenveto-osion verran.
 
- ---
- ## v0.5.5 – Live release from tested development version
+- ---
+## Field testing
 
-- Migrated tested development version v0.5.4.12 to live repository
-- Updated application core files
-- Added extended golf course and tee data
-- Fixed GitHub Pages data path case-sensitivity issue
-- Verified iPhone PWA functionality
+### Porvoo Golf – 2026-08-08
 
-
-## Field test
-
-v0.5.5 has been tested on the golf course with real players.
-
-Tested:
-- Live GitHub Pages version
-- iPhone PWA usage (Safari)
-- Android phone usage
-- Course selection
-- Tee selection
-- Voice score entry
-- Player scoring workflow
-
-Result:
-Successful field test with two players on the golf course.
-Tested on both iPhone and Android devices.
-
----
-
-## License
+- Scorecard and Stableford calculation tested during a full 18-hole round.
+- Final score and Stableford points matched GameBook exactly.
+- GPS Green Center distances compared with Garmin and course distance markers.
+- Typical GPS difference was approximately 1–2 metres.
+- On hole 9 (dogleg right), the app showed approximately 15–20 m shorter distance than Garmin. The app measures direct distance to the green center, which explains the difference on the dogleg.
+- GPS Phase 2 Green Center functionality confirmed working in field testing.
+- Tested on iPhone as a PWA.
 
 ## License
 

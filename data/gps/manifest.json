@@ -1,0 +1,91 @@
+{
+  "version": "1.0.2",
+  "country": "FI",
+  "courses": [
+    {
+      "courseId": "porvoogolf",
+      "file": "FI/porvoogolf.json",
+      "status": "field-test",
+      "holes": 14
+    },
+    {
+      "courseId": "gumbole",
+      "file": "FI/gumbole.json",
+      "status": "field-test",
+      "holes": 18
+    },
+    {
+      "courseId": "peurunkagolf",
+      "file": "FI/peurunkagolf.json",
+      "status": "field-test",
+      "holes": 18
+    },
+    {
+      "courseId": "keimola-saras",
+      "file": "FI/keimola-saras.json",
+      "status": "field-test",
+      "holes": 18
+    },
+    {
+      "courseId": "tuusula",
+      "file": "FI/tuusulangolf.json",
+      "status": "field-test",
+      "holes": 18
+    },
+    {
+      "courseId": "hyvigolf",
+      "file": "FI/hyvigolf.json",
+      "status": "field-test",
+      "holes": 18
+    },
+    {
+      "courseId": "nurmijarvi-ab",
+      "file": "FI/nurmijarvi-ab.json",
+      "status": "field-test",
+      "holes": 18
+    },
+    {
+      "courseId": "nurmijarvi-ba",
+      "file": "FI/nurmijarvi-ba.json",
+      "status": "field-test",
+      "holes": 18
+    },
+    {
+      "courseId": "kytaja-se",
+      "file": "FI/kytaja-se.json",
+      "status": "field-test",
+      "holes": 18
+    },
+    {
+      "courseId": "kytaja-nw",
+      "course": "Kytäjä North West",
+      "country": "FI",
+      "file": "FI/kytaja-nw.json",
+      "status": "pending"
+    },
+    {
+      "courseId": "koto-golf",
+      "course": "Koto Golf",
+      "country": "FI",
+      "file": "FI/koto-golf.json",
+      "status": "pending",
+      "holes": 18
+    },
+    {
+      "courseId": "stlaurence-kalkki-petteri",
+      "course": "St. Laurence Golf – Kalkki-Petteri",
+      "country": "FI",
+      "file": "FI/stlaurence-kalkki-petteri.json",
+      "status": "pending",
+      "holes": 18
+    },
+    {
+      "courseId": "stlaurence-pyha-lauri",
+      "course": "St. Laurence Golf – Pyhä Lauri",
+      "country": "FI",
+      "file": "FI/stlaurence-pyha-lauri.json",
+      "status": "pending",
+      "holes": 18
+    }
+  ]
+}

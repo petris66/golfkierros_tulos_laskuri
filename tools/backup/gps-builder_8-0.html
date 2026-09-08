@@ -1,0 +1,2081 @@
+<!doctype html>
+<html lang="fi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Golf Voice Scorecard AI – GPS Builder 0.8.0</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css?v=1.9.4">
+<style>
+:root{
+  --bg:#f4f6f3;--card:#fff;--text:#1d2a20;--muted:#667368;--border:#d7ded6;
+  --green:#2f6b3a;--green2:#eaf4e8;--warn:#8b5b00;--bad:#8a1c1c;--badbg:#fde8e8;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+main{max-width:1080px;margin:0 auto;padding:20px}
+h1{margin:0 0 6px;font-size:28px}
+h2{margin:0 0 12px}
+p{line-height:1.45}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin:14px 0;box-shadow:0 8px 20px rgba(0,0,0,.04)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+label{display:grid;gap:6px;font-weight:700}
+input,button,textarea,select{font:inherit}
+input,textarea,select{width:100%;padding:9px 10px;border:1px solid #bbc7ba;border-radius:10px;background:#fff}
+button{border:0;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}
+button.primary{background:var(--green);color:#fff}
+button.secondary{background:#e9eee8;color:#233}
+button.danger{background:#f8e7e7;color:var(--bad)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.status{padding:10px 12px;border-radius:10px;background:#eef2ee;color:#344;margin-top:10px}
+.status.ok{background:#e6f4e6;color:#1c5d28}
+.status.warn{background:#fff4d6;color:#6c4a00}
+.status.err{background:var(--badbg);color:var(--bad)}
+.summary{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.pill{display:inline-block;padding:4px 9px;border-radius:999px;background:#eef2ee;font-size:12px;font-weight:800}
+.pill.ok{background:#e6f4e6;color:#1c5d28}
+.pill.warn{background:#fff4d6;color:#6c4a00}
+.pill.err{background:var(--badbg);color:var(--bad)}
+#map{height:560px;width:100%;position:relative;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#eef2ee}
+.map-help{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
+.legend{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.dot{width:11px;height:11px;border-radius:50%;display:inline-block;background:#64748b}
+.dot.assigned{background:#2f6b3a}
+.dot.extra{background:#b91c1c}
+.dot.unassigned{background:#d97706}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th,td{border-bottom:1px solid var(--border);padding:7px 8px;text-align:left;vertical-align:middle}
+th{font-size:12px;color:var(--muted)}
+.num{width:72px}
+.coord{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11px}
+.small{font-size:13px;color:var(--muted)}
+tr.duplicate{background:#fff4d6}
+tr.unassigned{background:#fdeeee}
+tr.extra{background:#f7f7f7;color:#777}
+tr.selected{outline:2px solid #9bc59b;outline-offset:-2px}
+textarea{min-height:280px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px}
+.check{width:auto;transform:scale(1.15)}
+.popup-wrap{min-width:190px}
+.popup-title{font-weight:800;margin-bottom:8px}
+.popup-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.popup-row button{padding:7px 9px}
+.popup-select{margin-top:6px}
+.course-layout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(300px,.75fr);gap:14px;align-items:start}
+.course-hole-list{max-height:560px;overflow:auto;border:1px solid var(--border);border-radius:14px;background:#fff}
+.course-hole-row{display:grid;grid-template-columns:50px 54px 56px 1fr;gap:6px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px}
+.course-hole-row:last-child{border-bottom:0}.course-hole-row.missing{background:#fff4d6}.course-hole-row.done{background:#eef8ec}
+.course-hole-row button{padding:5px 7px;font-size:11px}.tee-lengths{color:var(--muted);line-height:1.35}.green-ref{font-weight:900;color:var(--green)}
+@media(max-width:900px){.course-layout{grid-template-columns:1fr}.course-hole-list{max-height:360px}}
+@media(max-width:760px){
+  .grid{grid-template-columns:1fr}
+  #map{height:470px}
+  table{font-size:12px}
+  th:nth-child(5),td:nth-child(5){display:none}
+}
+
+    .hole-mapper-overlay{position:fixed;inset:0;z-index:5000;background:#f7faf7;display:none;flex-direction:column}
+    .hole-mapper-overlay.open{display:flex}
+    .hole-mapper-toolbar{padding:10px 14px;background:#fff;border-bottom:1px solid #ccd8cc;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .hole-mapper-toolbar select{min-width:120px}
+    .hole-mapper-status{font-size:14px;flex:1;min-width:280px}
+    #holeMapperMap{flex:1;min-height:500px}
+    .hole-mapper-footer{padding:8px 14px;background:#fff;border-top:1px solid #ccd8cc;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<main>
+  <h1>GPS Builder 0.8.0</h1>
+  <p class="small">Kehitystyökalu GPS Libraryn rakentamiseen. Varsinainen Golf Voice Scorecard AI ei käytä Overpass API:a kentällä.</p>
+
+  <section class="card">
+    <h2>1. Kentän tiedot</h2>
+    <div class="grid">
+      <label>Kentän nimi<input id="courseName" value="Porvoo Golf"></label>
+      <label>courseId<input id="courseId" value="porvoogolf"></label>
+      <label>Keskipiste latitude<input id="lat" inputmode="decimal" value="60.4218"></label>
+      <label>Keskipiste longitude<input id="lon" inputmode="decimal" value="25.6952"></label>
+      <label>Hakusäde metreinä<input id="radius" inputmode="numeric" value="3200"></label>
+      <label>Maa<input id="country" value="FI"></label>
+    </div>
+    <label style="margin-top:12px">Kenttävalinta
+<select id="builderCourseSelect">
+<option value="">Valitse kenttä...</option>
+</select>
+</label>
+
+<div class="actions">
+      <button class="primary" id="fetchBtn">Hae greenit OpenStreetMapista</button>
+      <button class="secondary" id="manualGreenBtn">Lisää F/C/B käsin</button>
+      <button class="secondary" id="porvooBtn">Porvoo-esiasetus</button>
+      <button class="secondary" id="gumboleBtn">Gumböle-esiasetus</button>
+      <button class="secondary" id="peurunkaBtn">Peurunka-esiasetus</button>
+      <button class="secondary" id="keimolaSarasBtn">Keimola Saras -esiasetus</button>
+    </div>
+    <div id="status" class="status">Valmis hakuun.</div>
+  </section>
+
+  <section class="card">
+    <h2>2. Greenit kartalla</h2>
+    <div class="map-help">
+      <span class="legend"><span class="dot assigned"></span> Reikä määritelty</span>
+      <span class="legend"><span class="dot unassigned"></span> Ei reikänumeroa</span>
+      <span class="legend"><span class="dot extra"></span> Ylimääräinen / ei käytetä</span>
+    </div>
+    <p class="small">Klikkaa markeria. Valitse oikea reikä 1–18 tai merkitse green ylimääräiseksi. Numerointi päivittyy myös alla olevaan taulukkoon.</p>
+    <div class="course-layout">
+      <div>
+        <div id="map"></div>
+        <div id="mapStatus" class="status">Kartta odottaa green-hakua.</div>
+      </div>
+      <div>
+        <h3 style="margin-top:0">Course Library – reiät</h3>
+        <p class="small">Par, HCP ja tiipituudet auttavat greenin tunnistamisessa. Markerien G1–G19 tunnus on vain Builderin viite, ei reikänumero.</p>
+        <div id="courseLibraryStatus" class="status">Kenttädataa ei ole vielä ladattu.</div>
+        <div id="courseHoleList" class="course-hole-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>3. OSM-kenttärakenteen diagnostiikka</h2>
+    <p class="small">Tutkii valitun alueen golf course / relation / golf=hole -rakenteen ennen esteiden kohdistusta. Tarkoitus on selvittää, voidaanko Saras ja Kirkka erottaa automaattisesti OSM:n omilla tageilla ja jäsenyyksillä.</p>
+    <div class="actions">
+      <button class="secondary" id="courseDiagBtn">Tutki OSM-kenttärakenne</button>
+    </div>
+    <div id="courseDiagStatus" class="status">Diagnostiikkaa ei ole vielä ajettu.</div>
+    <textarea id="courseDiagOutput" spellcheck="false" style="min-height:220px"></textarea>
+    <div class="actions">
+      <button class="secondary" id="openHoleMapperBtn">Avaa iso väylämapping-kartta</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>4. Esteet kartalla — testi</h2>
+    <p class="small">Kenttäkohtainen kartoitustesti. Builder valitsee jokaiselle reiälle oikean golf=hole-väylägeometrian validoidun greenin avulla ja kohdistaa bunkkerit sekä vedet koko väylän matkalta tiiltä greenille. Automaattisesti kohdistetut esteet ovat oletuksena mukana. Jos samalla alueella on toisen kentän saman numeron väylä, voit näyttää reiän väyläehdokkaat ja lukita oikean väylägeometrian ennen estehakua. Tarkistuksessa tarvitsee hylätä vain jäljelle jäävät ylimääräiset esteet.</p>
+    <div class="actions">
+      <button class="secondary" id="obstacleBtn">Hae bunkkerit ja vedet</button>
+      <button class="secondary" id="reviewObstaclesBtn" disabled>Poista ylimääräiset esteet</button>
+      <button class="secondary" id="downloadReviewedObstaclesBtn" disabled>Lataa tarkistetut esteet JSON</button>
+      <button class="secondary" id="clearObstaclesBtn" disabled>Piilota esteet</button>
+      <button class="secondary" id="manualWaterBtn">Lisää vesi käsin</button>
+    </div>
+    <div class="actions">
+      <button class="secondary" id="showHoleCandidatesBtn" disabled>Näytä reiän väyläehdokkaat</button>
+      <button class="secondary" id="clearHoleLockBtn" disabled>Poista reiän väylälukitus</button>
+    </div>
+    <div id="holeCandidateStatus" class="small" style="margin-top:6px">Väylägeometriaa ei ole lukittu käsin.</div>
+    <div class="actions">
+      <label style="min-width:220px">Näytä reiän esteet
+        <select id="obstacleHoleFilter">
+          <option value="assigned">Kaikki väylille kohdistetut</option>
+          <option value="all">Kaikki löydetyt</option>
+          <option value="1">Reikä 1</option>
+          <option value="2">Reikä 2</option>
+          <option value="3">Reikä 3</option>
+          <option value="4">Reikä 4</option>
+          <option value="5">Reikä 5</option>
+          <option value="6">Reikä 6</option>
+          <option value="7">Reikä 7</option>
+          <option value="8">Reikä 8</option>
+          <option value="9">Reikä 9</option>
+          <option value="10">Reikä 10</option>
+          <option value="11">Reikä 11</option>
+          <option value="12">Reikä 12</option>
+          <option value="13">Reikä 13</option>
+          <option value="14">Reikä 14</option>
+          <option value="15">Reikä 15</option>
+          <option value="16">Reikä 16</option>
+          <option value="17">Reikä 17</option>
+          <option value="18">Reikä 18</option>
+        </select>
+      </label>
+    </div>
+    <div id="obstacleStatus" class="status">Esteitä ei ole vielä haettu.</div>
+    <div id="obstacleSummary" class="small" style="margin-top:8px"></div>
+  </section>
+
+  <section class="card">
+    <h2>5. Greenien validointi</h2>
+    <div class="summary">
+      <span class="pill" id="foundPill">Löytyi 0</span>
+      <span class="pill" id="uniquePill">Uniikit reiät 0/18</span>
+      <span class="pill" id="duplicatePill">Duplikaatit 0</span>
+      <span class="pill" id="missingPill">Puuttuvat 18</span>
+      <span class="pill" id="extraPill">Ylimääräiset 0</span>
+    </div>
+    <div style="overflow:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>Käytä</th><th>Reikä</th><th>Latitude</th><th>Longitude</th><th>OSM</th><th>Tila</th><th>Poista</th>
+          </tr>
+        </thead>
+        <tbody id="greensBody"></tbody>
+      </table>
+    </div>
+    <div class="actions">
+      <button class="secondary" id="sortBtn" disabled>Järjestä reiän mukaan</button>
+      <button class="secondary" id="clearBtn">Tyhjennä</button>
+    </div>
+    <div id="validationStatus" class="status">Ei vielä dataa.</div>
+  </section>
+
+  <section class="card">
+    <h2>6. Valmis GPS Library JSON</h2>
+    <p class="small">Normaalisti JSON muodostetaan 18/18 reiästä. Porvoossa Builder sallii testiexportin varmoille rei'ille 1–3 ja 8–18; muuttuneet reiät 4–7 jätetään pois.</p>
+    <div class="actions">
+      <button class="primary" id="buildBtn" disabled>Muodosta JSON</button>
+      <button class="secondary" id="downloadBtn" disabled>Lataa JSON</button>
+    </div>
+    <div id="buildStatus" class="status">JSONia ei ole vielä muodostettu.</div>
+    <textarea id="output" spellcheck="false"></textarea>
+  </section>
+</main>
+
+  <div id="holeMapperOverlay" class="hole-mapper-overlay">
+    <div class="hole-mapper-toolbar">
+      <strong>Keimola Saras — väylämapping</strong>
+      <label>Reikä
+        <select id="holeMapperHole"></select>
+      </label>
+      <button class="secondary" id="holeMapperPrev">← Edellinen</button>
+      <button class="secondary" id="holeMapperNext">Seuraava →</button>
+      <span id="holeMapperStatus" class="hole-mapper-status">Hae ensin OSM-kenttärakenne.</span>
+      <button class="secondary" id="holeMapperClose">Sulje</button>
+    </div>
+    <div id="holeMapperMap"></div>
+    <div class="hole-mapper-footer">
+      <span id="holeMapperProgress">Valittu 0/18 väylää.</span>
+      <button class="secondary" id="downloadHoleMappingBtn">Lataa väylämapping JSON</button>
+      <span class="small">Kartalla näkyvät vain valitun reikänumeron OSM-väyläehdokkaat. Klikkaa oikeaa Saraksen linjaa ja valitse se.</span>
+    </div>
+  </div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js?v=1.9.4"></script>
+<script>
+// GPS Builder 0.8.0 - Peurunka bunker cleanup
+(() => {
+  const endpoints = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.nchc.org.tw/api/interpreter"
+  ];
+
+  const $ = id => document.getElementById(id);
+  const courseName=$("courseName"), courseId=$("courseId"), lat=$("lat"), lon=$("lon"),
+        radius=$("radius"), country=$("country"), status=$("status"), mapStatus=$("mapStatus"), courseLibraryStatus=$("courseLibraryStatus"), courseHoleList=$("courseHoleList"),
+        greensBody=$("greensBody"), foundPill=$("foundPill"), uniquePill=$("uniquePill"),
+        duplicatePill=$("duplicatePill"), missingPill=$("missingPill"), extraPill=$("extraPill"),
+        validationStatus=$("validationStatus"), fetchBtn=$("fetchBtn"), sortBtn=$("sortBtn"),
+        clearBtn=$("clearBtn"), buildBtn=$("buildBtn"), downloadBtn=$("downloadBtn"),
+        buildStatus=$("buildStatus"), output=$("output"),
+        obstacleBtn=$("obstacleBtn"), reviewObstaclesBtn=$("reviewObstaclesBtn"), downloadReviewedObstaclesBtn=$("downloadReviewedObstaclesBtn"), clearObstaclesBtn=$("clearObstaclesBtn"), manualWaterBtn=$("manualWaterBtn"),
+        obstacleStatus=$("obstacleStatus"), obstacleSummary=$("obstacleSummary"),
+        obstacleHoleFilter=$("obstacleHoleFilter"), showHoleCandidatesBtn=$("showHoleCandidatesBtn"), clearHoleLockBtn=$("clearHoleLockBtn"), holeCandidateStatus=$("holeCandidateStatus"),
+        courseDiagBtn=$("courseDiagBtn"), courseDiagStatus=$("courseDiagStatus"), courseDiagOutput=$("courseDiagOutput"),
+        openHoleMapperBtn=$("openHoleMapperBtn"), holeMapperOverlay=$("holeMapperOverlay"), holeMapperHole=$("holeMapperHole"),
+        holeMapperPrev=$("holeMapperPrev"), holeMapperNext=$("holeMapperNext"), holeMapperStatus=$("holeMapperStatus"),
+        holeMapperClose=$("holeMapperClose"), holeMapperProgress=$("holeMapperProgress"), downloadHoleMappingBtn=$("downloadHoleMappingBtn");
+
+  let greens=[];
+  let courseRows=[];
+  let courseByHole=new Map();
+  let pendingGreenIndex=null;
+  let map=null;
+  let markerLayer=null;
+  let lastJson=null;
+  let golfHoleWays=[];
+  let manualGreenMode=false;
+  let manualGreenDraft=null;
+  let obstacles=[];
+  let obstacleLayer=null;
+  let obstacleReviewMode=false;
+  let obstacleHoleCandidates=[];
+  let lockedHoleWayIds={};
+  let holeCandidateLayer=null;
+  let diagnosticHoleWays=[];
+  let holeMapperMap=null;
+  let holeMapperLayer=null;
+  let courseBoundaries=[];
+  let manualWaterMode=false;
+  let manualWaterPoints=[];
+  let manualWaterLayer=null;
+  let manualWaters=[];
+
+  function setStatus(text,type=""){status.textContent=text;status.className="status"+(type?" "+type:"")}
+  function setMapStatus(text,type=""){mapStatus.textContent=text;mapStatus.className="status"+(type?" "+type:"")}
+  function setValidation(text,type=""){validationStatus.textContent=text;validationStatus.className="status"+(type?" "+type:"")}
+  function setBuild(text,type=""){buildStatus.textContent=text;buildStatus.className="status"+(type?" "+type:"")}
+
+  function parseHole(tags={}){
+    const values=[tags.ref,tags.hole,tags["golf:hole"],tags.name,tags.description].filter(v=>v!=null);
+    for(const raw of values){
+      const t=String(raw).trim();
+      if(/^(1[0-8]|[1-9])$/.test(t)) return Number(t);
+      const m=t.match(/(?:hole|reika|reikä|green|viherio|viheriö)?\s*#?\s*(1[0-8]|[1-9])\b/i);
+      if(m) return Number(m[1]);
+    }
+    return null;
+  }
+
+  function centerOf(e){
+    if(Number.isFinite(Number(e.lat))&&Number.isFinite(Number(e.lon))) return {lat:+e.lat,lon:+e.lon};
+    if(Number.isFinite(Number(e.center?.lat))&&Number.isFinite(Number(e.center?.lon))) return {lat:+e.center.lat,lon:+e.center.lon};
+    const g=Array.isArray(e.geometry)?e.geometry.filter(p=>Number.isFinite(+p.lat)&&Number.isFinite(+p.lon)):[];
+    if(!g.length) return null;
+    return {
+      lat:g.reduce((s,p)=>s+(+p.lat),0)/g.length,
+      lon:g.reduce((s,p)=>s+(+p.lon),0)/g.length
+    };
+  }
+
+  function initMap(){
+    if(!window.L){
+      setMapStatus("Leaflet-karttakirjasto ei latautunut. Tarkista verkkoyhteys ja lataa sivu uudelleen.","err");
+      return false;
+    }
+    if(map) return true;
+    map=L.map("map").setView([+lat.value||60.4218,+lon.value||25.6952],14);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
+      maxZoom:20,
+      attribution:'© OpenStreetMap contributors'
+    }).addTo(map);
+    markerLayer=L.layerGroup().addTo(map);
+
+    map.on("click",e=>{
+      if(manualWaterMode){
+        manualWaterPoints.push({lat:+e.latlng.lat,lon:+e.latlng.lng});
+        if(!manualWaterLayer) manualWaterLayer=L.layerGroup().addTo(map);
+        manualWaterLayer.clearLayers();
+        if(manualWaterPoints.length>1) L.polygon(manualWaterPoints.map(p=>[p.lat,p.lon]),{weight:3}).addTo(manualWaterLayer);
+        setMapStatus(`Käsin lisätty vesi: ${manualWaterPoints.length} pistettä. Sulje alue painikkeella.`,`warn`);
+        return;
+      }
+      if(!manualGreenMode || !manualGreenDraft) return;
+
+      const point={lat:+e.latlng.lat,lon:+e.latlng.lng};
+
+      if(!manualGreenDraft.front){
+        manualGreenDraft.front=point;
+        setMapStatus(`Reikä ${manualGreenDraft.hole}: Front tallennettu. Klikkaa nyt greenin CENTER.`,"warn");
+        return;
+      }
+
+      if(!manualGreenDraft.center){
+        manualGreenDraft.center=point;
+        setMapStatus(`Reikä ${manualGreenDraft.hole}: Center tallennettu. Klikkaa nyt greenin BACK.`,"warn");
+        return;
+      }
+
+      manualGreenDraft.back=point;
+      const draft=manualGreenDraft;
+      manualGreenMode=false;
+      manualGreenDraft=null;
+
+      greens.forEach(other=>{
+        if(other.hole===draft.hole && !other.extra){
+          other.hole=null;
+          other.selected=false;
+        }
+      });
+
+      greens.push({
+        hole:draft.hole,
+        lat:draft.center.lat,
+        lon:draft.center.lon,
+        geometry:[],
+        type:"manual",
+        id:`manual-${Date.now()}`,
+        tags:{},
+        selected:true,
+        extra:false,
+        autoAssigned:false,
+        autoDistance:null,
+        manual:true,
+        manualFront:draft.front,
+        manualCenter:draft.center,
+        manualBack:draft.back
+      });
+
+      render();
+      renderMap();
+      setMapStatus(`Reiän ${draft.hole} Front / Center / Back lisätty käsin. Valmis validointiin.`,"ok");
+    });
+
+    observeMapResize();
+    window.setTimeout(()=>map.invalidateSize(true),100);
+    return true;
+  }
+
+  let mapResizeObserver=null;
+
+  function observeMapResize(){
+    const mapElement=document.getElementById("map");
+    if(!mapElement || !window.ResizeObserver || mapResizeObserver) return;
+    mapResizeObserver=new ResizeObserver(()=>{
+      if(map){
+        window.setTimeout(()=>map.invalidateSize(false),50);
+      }
+    });
+    mapResizeObserver.observe(mapElement);
+  }
+
+  function markerColor(g){
+    if(g.extra) return "#b91c1c";
+    if(Number.isInteger(g.hole)) return "#2f6b3a";
+    return "#d97706";
+  }
+
+  function circleIcon(color,label){
+    return L.divIcon({
+      className:"",
+      html:`<div style="
+        width:30px;height:30px;border-radius:50%;
+        background:${color};color:white;border:2px solid white;
+        box-shadow:0 1px 6px rgba(0,0,0,.45);
+        display:flex;align-items:center;justify-content:center;
+        font-weight:900;font-size:12px">${label}</div>`,
+      iconSize:[30,30],
+      iconAnchor:[15,15]
+    });
+  }
+
+  function popupHtml(index,g){
+    const options=['<option value="">Valitse reikä…</option>'];
+    for(let h=1;h<=18;h++) options.push(`<option value="${h}" ${g.hole===h?'selected':''}>Reikä ${h}</option>`);
+    return `
+      <div class="popup-wrap">
+        <div class="popup-title">G${index+1} ${g.hole?`→ Reikä ${g.hole}`:""}</div>
+        <div class="small">${g.lat.toFixed(7)}, ${g.lon.toFixed(7)}</div>
+        <select class="popup-select" data-green-index="${index}">
+          ${options.join("")}
+        </select>
+        <div class="popup-row">
+          <button type="button" class="primary popup-assign" data-green-index="${index}">Aseta</button>
+          <button type="button" class="danger popup-extra" data-green-index="${index}">
+            ${g.extra?'Palauta':'Ylimääräinen'}
+          </button>
+        </div>
+        <button type="button" class="secondary popup-pick" data-green-index="${index}" style="width:100%;margin-top:6px">Valitse G${index+1} ja liitä reiän listasta</button>
+      </div>`;
+  }
+
+  function renderMap(){
+    if(!initMap()) return;
+    markerLayer.clearLayers();
+
+    // Leaflet tarvitsee koon uudelleenlaskennan, koska Builderin kortit ja
+    // Course Library -paneeli muuttavat sivun layoutia haun aikana.
+    map.invalidateSize(true);
+
+    if(!greens.length){
+      setMapStatus("Kartta odottaa green-hakua.");
+      return;
+    }
+
+    const bounds=[];
+    greens.forEach((g,index)=>{
+      const label=`G${index+1}`;
+      const marker=L.marker([g.lat,g.lon],{
+        icon:circleIcon(markerColor(g),label)
+      })
+        .bindPopup(popupHtml(index,g))
+        .addTo(markerLayer);
+      bounds.push([g.lat,g.lon]);
+    });
+
+    if(bounds.length){
+      map.fitBounds(bounds,{padding:[28,28],maxZoom:17});
+    }
+
+    // fitBounds heti layout-muutoksen yhteydessä voi jättää Leafletin vanhaan
+    // kokoon. Toinen invalidointi seuraavalla event loopilla korjaa tiilet.
+    window.setTimeout(()=>{
+      map.invalidateSize(true);
+      if(bounds.length){
+        map.fitBounds(bounds,{padding:[28,28],maxZoom:17});
+      }
+    },150);
+
+    setMapStatus(`Kartalla ${greens.length} greeniä tunnuksilla G1–G${greens.length}. Klikkaa markeria ja määritä reikä 1–18.`,"ok");
+  }
+
+  document.addEventListener("click",e=>{
+    const assign=e.target.closest(".popup-assign");
+    if(assign){
+      const index=+assign.dataset.greenIndex;
+      const select=document.querySelector(`.popup-select[data-green-index="${index}"]`);
+      const hole=+select.value;
+      if(!Number.isInteger(hole)||hole<1||hole>18) return;
+      greens.forEach((other,i)=>{
+        if(i!==index && other.hole===hole && !other.extra){
+          other.hole=null;
+          other.selected=false;
+        }
+      });
+      greens[index].hole=hole;
+      greens[index].extra=false;
+      greens[index].selected=true;
+      render();
+      renderMap();
+      map.closePopup();
+    }
+
+    const pick=e.target.closest(".popup-pick");
+    if(pick){
+      pendingGreenIndex=+pick.dataset.greenIndex;
+      renderCourseHoles();
+      setMapStatus(`G${pendingGreenIndex+1} valittu. Paina oikean reiän kohdalta Liitä G${pendingGreenIndex+1}.`,"warn");
+      map.closePopup();
+    }
+
+    const extra=e.target.closest(".popup-extra");
+    if(extra){
+      const index=+extra.dataset.greenIndex;
+      greens[index].extra=!greens[index].extra;
+      if(greens[index].extra){
+        greens[index].selected=false;
+        greens[index].hole=null;
+      }
+      render();
+      renderMap();
+      map.closePopup();
+    }
+  });
+
+
+  function normalizeCourseRows(rows){
+    const byHole=new Map();
+    (Array.isArray(rows)?rows:[]).forEach(row=>{
+      const h=Number(row.hole);
+      if(!Number.isInteger(h)||h<1||h>18) return;
+      if(!byHole.has(h)) byHole.set(h,[]);
+      byHole.get(h).push(row);
+    });
+    courseByHole=byHole;
+    return byHole;
+  }
+
+  function repoBasePath(){
+    const parts=window.location.pathname.split("/").filter(Boolean);
+    // GitHub Pages project site: /<repo>/tools/gps-builder.html
+    if(parts.length>=3 && parts[parts.length-2]==="tools"){
+      return "/" + parts.slice(0,-2).join("/");
+    }
+    return "";
+  }
+
+  async function fetchJsonCandidates(paths){
+    let lastError=null;
+    for(const path of paths){
+      try{
+        const response=await fetch(path,{cache:"no-store"});
+        if(!response.ok) throw new Error(`${path} → HTTP ${response.status}`);
+        return {data:await response.json(),path};
+      }catch(err){
+        lastError=err;
+        console.warn("JSON-haku epäonnistui:",path,err);
+      }
+    }
+    throw lastError||new Error("JSON-haku epäonnistui");
+  }
+
+  async function loadCourseLibrary(){
+    courseRows=[];courseByHole=new Map();
+    courseHoleList.innerHTML="";
+    const id=(courseId.value||"").trim();
+    if(!id){courseLibraryStatus.textContent="courseId puuttuu.";return;}
+
+    try{
+      courseLibraryStatus.textContent="Ladataan Course Library…";
+      courseLibraryStatus.className="status";
+
+      const base=repoBasePath();
+      const manifestCandidates=[
+        `${base}/data/source/manifest.json?v=builder063`,
+        `../data/source/manifest.json?v=builder063`
+      ];
+
+      const manifestResult=await fetchJsonCandidates(manifestCandidates);
+      const manifest=manifestResult.data;
+      const entry=(manifest?.courses||[]).find(item=>item.courseId===id);
+
+      if(!entry?.file){
+        throw new Error(`Kenttää ${id} ei löytynyt Course Library manifestista`);
+      }
+
+      const courseCandidates=[
+        `${base}/data/source/${entry.file}?v=builder063`,
+        `../data/source/${entry.file}?v=builder063`
+      ];
+
+      const courseResult=await fetchJsonCandidates(courseCandidates);
+      courseRows=courseResult.data;
+
+      // Kenttätiedosto on nykyisessä Course Libraryssa taulukko.
+      // Jos rakenne joskus muuttuu objektiksi, hyväksytään myös .rows/.data.
+      if(!Array.isArray(courseRows)){
+        courseRows=courseRows?.rows||courseRows?.data||[];
+      }
+
+      normalizeCourseRows(courseRows);
+      const holes=[...courseByHole.keys()].filter(h=>h>=1&&h<=18);
+
+      courseLibraryStatus.textContent=
+        `Course Library ladattu: ${holes.length}/18 reikää ✓`;
+      courseLibraryStatus.className="status "+(holes.length===18?"ok":"warn");
+      renderCourseHoles();
+    }catch(err){
+      courseLibraryStatus.textContent=
+        `Course Libraryn lataus epäonnistui: ${err.message||err}`;
+      courseLibraryStatus.className="status err";
+    }
+  }
+
+  function holeSummary(hole){
+    const rows=courseByHole.get(hole)||[];
+    if(!rows.length) return {par:"—",hcp:"—",lengths:"Ei Course Library -dataa"};
+    const base=rows[0];
+    const seen=new Map();
+    rows.forEach(r=>{
+      const key=`${r.tee||"Tii"} ${r.gender||""}`.trim();
+      if(Number.isFinite(Number(r.meters))&&!seen.has(key)) seen.set(key,Number(r.meters));
+    });
+    const lengths=[...seen.entries()].map(([k,v])=>`${k}: ${v} m`).join(" · ");
+    return {par:base.par??"—",hcp:base.hcp??"—",lengths:lengths||"Pituus puuttuu"};
+  }
+
+  function assignedGreenForHole(hole){
+    const index=greens.findIndex(g=>!g.extra&&g.hole===hole);
+    return index>=0?{index,g:greens[index]}:null;
+  }
+
+  function renderCourseHoles(){
+    courseHoleList.innerHTML="";
+    for(let h=1;h<=18;h++){
+      const info=holeSummary(h), assigned=assignedGreenForHole(h);
+      const row=document.createElement("div");
+      row.className="course-hole-row "+(assigned?"done":"missing");
+      const ref=assigned?`G${assigned.index+1}`:"—";
+      const buttonLabel=pendingGreenIndex!==null?`Liitä G${pendingGreenIndex+1}`:(assigned?"Vaihda":"Valitse kartalta");
+      row.innerHTML=`<strong>R${h}</strong><span>Par ${info.par}</span><span>HCP ${info.hcp}</span><div><div class="tee-lengths">${info.lengths}</div><div class="green-ref">Green: ${ref}</div><button type="button" class="secondary course-link-btn" data-hole="${h}">${buttonLabel}</button></div>`;
+      courseHoleList.appendChild(row);
+    }
+  }
+
+  courseHoleList.addEventListener("click",e=>{
+    const btn=e.target.closest(".course-link-btn");
+    if(!btn) return;
+    const hole=Number(btn.dataset.hole);
+    if(pendingGreenIndex===null){
+      setMapStatus(`Valitse ensin kartalta green-marker (G1–G${greens.length||19}) ja paina sen popupista “Valitse …”.`,"warn");
+      return;
+    }
+    greens.forEach((other,i)=>{
+      if(i!==pendingGreenIndex && other.hole===hole && !other.extra){other.hole=null;other.selected=false;}
+    });
+    const g=greens[pendingGreenIndex];
+    if(!g) return;
+    g.hole=hole;g.extra=false;g.selected=true;
+    const linked=pendingGreenIndex;
+    pendingGreenIndex=null;
+    render();renderMap();renderCourseHoles();
+    setMapStatus(`G${linked+1} liitetty reikään ${hole}.`,"ok");
+  });
+
+  function validation(){
+    const active=greens.filter(g=>!g.extra);
+    const byHole=new Map();
+    active.forEach(g=>{
+      if(!Number.isInteger(g.hole)||g.hole<1||g.hole>18) return;
+      if(!byHole.has(g.hole)) byHole.set(g.hole,[]);
+      byHole.get(g.hole).push(g);
+    });
+
+    const missing=[],duplicates=[];
+    for(let h=1;h<=18;h++){
+      const arr=byHole.get(h)||[];
+      if(arr.length===0) missing.push(h);
+      if(arr.length>1) duplicates.push(h);
+    }
+
+    const safeSet=partialExportHoles();
+    let exportable=false;
+    let exportHoles=[];
+
+    if(safeSet){
+      exportHoles=[...safeSet].filter(h=>(byHole.get(h)||[]).length===1);
+      exportable=exportHoles.length===safeSet.size;
+    }else{
+      exportHoles=[...byHole.keys()].filter(h=>(byHole.get(h)||[]).length===1);
+      exportable=missing.length===0 && duplicates.length===0 && exportHoles.length===18;
+    }
+
+    return {active,byHole,missing,duplicates,exportable,exportHoles,safeSet};
+  }
+
+  function updateSummary(){
+    const v=validation();
+    const extras=greens.filter(g=>g.extra).length;
+    foundPill.textContent=`Löytyi ${greens.length}`;
+    uniquePill.textContent=`Uniikit reiät ${18-v.missing.length}/18`;
+    duplicatePill.textContent=`Duplikaatit ${v.duplicates.length}`;
+    missingPill.textContent=`Puuttuvat ${v.missing.length}`;
+    extraPill.textContent=`Ylimääräiset ${extras}`;
+
+    foundPill.className="pill "+(greens.length>=18?"ok":"warn");
+    uniquePill.className="pill "+(v.missing.length===0?"ok":"warn");
+    duplicatePill.className="pill "+(v.duplicates.length===0?"ok":"warn");
+    missingPill.className="pill "+(v.missing.length===0?"ok":"err");
+    extraPill.className="pill "+(extras===Math.max(0,greens.length-18)?"ok":"warn");
+
+    buildBtn.disabled=!v.exportable;
+
+    if(v.safeSet){
+      const missingSafe=[...v.safeSet].filter(h=>(v.byHole.get(h)||[]).length!==1);
+      if(!missingSafe.length){
+        setValidation(
+          "Porvoon 14 varmaa testireikää (1–3 ja 8–18) ovat valmiit. Reiät 4–7 jätetään tarkoituksella pois GPS-exportista.",
+          "ok"
+        );
+      }else{
+        setValidation(
+          `Porvoon testiexportista puuttuvat vielä reiät: ${missingSafe.join(", ")}. Reiät 4–7 jätetään tarkoituksella pois.`,
+          "warn"
+        );
+      }
+    }else if(v.exportable){
+      setValidation("18/18: täsmälleen yksi käytössä oleva green jokaiselle reiälle. Valmis JSONin muodostamiseen.","ok");
+    }else if(v.missing.length){
+      setValidation(`Puuttuvat reiät: ${v.missing.join(", ")}. Määritä ne kartalta.`,"warn");
+    }else if(v.duplicates.length){
+      setValidation(`Duplikaatit rei'illä: ${v.duplicates.join(", ")}. Korjaa kartalta.`,"warn");
+    }else{
+      setValidation("Tarkista greenien määritykset.","warn");
+    }
+  }
+
+  function render(){
+    const v=validation();
+    greensBody.innerHTML="";
+    greens.forEach((g,index)=>{
+      const tr=document.createElement("tr");
+      const dup=!g.extra&&(v.byHole.get(g.hole)||[]).length>1;
+      if(dup) tr.classList.add("duplicate");
+      if(!g.extra&&!g.hole) tr.classList.add("unassigned");
+      if(g.extra) tr.classList.add("extra");
+      if(g.selected) tr.classList.add("selected");
+
+      const tdUse=document.createElement("td");
+      const cb=document.createElement("input");
+      cb.type="checkbox";cb.className="check";cb.checked=!g.extra&&!!g.hole;
+      cb.disabled=true;
+      tdUse.appendChild(cb);
+
+      const tdHole=document.createElement("td");
+      const inp=document.createElement("input");
+      inp.className="num";inp.type="number";inp.min="1";inp.max="18";inp.value=g.hole??"";
+      inp.disabled=g.extra;
+      inp.addEventListener("change",()=>{
+        const n=+inp.value;
+        if(Number.isInteger(n)&&n>=1&&n<=18){
+          greens.forEach((other,i)=>{
+            if(i!==index && other.hole===n && !other.extra){
+              other.hole=null;other.selected=false;
+            }
+          });
+          g.hole=n;g.selected=true;g.extra=false;
+        }else{
+          g.hole=null;g.selected=false;
+        }
+        render();renderMap();
+      });
+      tdHole.appendChild(inp);
+
+      const tdLat=document.createElement("td");tdLat.className="coord";tdLat.textContent=g.lat.toFixed(7);
+      const tdLon=document.createElement("td");tdLon.className="coord";tdLon.textContent=g.lon.toFixed(7);
+      const tdId=document.createElement("td");tdId.className="coord";tdId.textContent=`${g.type}/${g.id}`;
+      const tdState=document.createElement("td");tdState.className="small";
+      tdState.textContent=g.extra?"Ylimääräinen":(g.hole?`Reikä ${g.hole}${g.autoAssigned?" (auto)":""}`:"Määrittämättä");
+
+      const tdRm=document.createElement("td");
+      const rm=document.createElement("button");rm.className="danger";rm.textContent="×";
+      rm.addEventListener("click",()=>{greens.splice(index,1);render();renderMap()});
+      tdRm.appendChild(rm);
+
+      tr.append(tdUse,tdHole,tdLat,tdLon,tdId,tdState,tdRm);
+      greensBody.appendChild(tr);
+    });
+    sortBtn.disabled=greens.length===0;
+    updateSummary();
+    renderCourseHoles();
+  }
+
+  function buildQuery(){
+    const la=+lat.value,lo=+lon.value,r=Math.max(500,+radius.value||3000);
+    if(!Number.isFinite(la)||!Number.isFinite(lo)) throw new Error("Kentän latitude/longitude ei ole kelvollinen.");
+    return `[out:json][timeout:35];
+(
+  node["golf"="green"](around:${r},${la},${lo});
+  way["golf"="green"](around:${r},${la},${lo});
+  relation["golf"="green"](around:${r},${la},${lo});
+  way["golf"="hole"](around:${r},${la},${lo});
+  node["golf"="pin"](around:${r},${la},${lo});
+);
+out tags center geom;`;
+  }
+
+  function buildCourseDiagnosticQuery(){
+    const la=+lat.value,lo=+lon.value,r=Math.max(500,+radius.value||3000);
+    if(!Number.isFinite(la)||!Number.isFinite(lo)) throw new Error("Kentän latitude/longitude ei ole kelvollinen.");
+    return `[out:json][timeout:35];
+(
+  nwr["leisure"="golf_course"](around:${r},${la},${lo});
+  relation["golf"](around:${r},${la},${lo});
+  way["golf"="hole"](around:${r},${la},${lo});
+);
+out tags center geom;
+>;
+out tags;`;
+  }
+
+  function compactTags(tags={}){
+    const preferred=[
+      "name","ref","golf","leisure","type","route","operator",
+      "golf:course","course","holes","golf:holes","description"
+    ];
+    const out={};
+    for(const k of preferred){
+      if(tags[k]!=null) out[k]=tags[k];
+    }
+    for(const [k,v] of Object.entries(tags)){
+      if(out[k]!=null) continue;
+      if(k.startsWith("golf:") || k.startsWith("course:")) out[k]=v;
+    }
+    return out;
+  }
+
+  async function runCourseDiagnostics(){
+    courseDiagBtn.disabled=true;
+    courseDiagStatus.textContent="Haetaan OSM:n golf course / relation / hole -rakennetta…";
+    courseDiagStatus.className="status";
+    courseDiagOutput.value="";
+    const query=buildCourseDiagnosticQuery();
+    let lastErr=null;
+
+    for(const endpoint of endpoints){
+      try{
+        const data=await fetchOverpassWithFallback(endpoint,query);
+        const elements=data.elements||[];
+
+        const courses=elements.filter(e=>e.tags?.leisure==="golf_course");
+        const relations=elements.filter(e=>e.type==="relation" && (e.tags?.golf || e.tags?.leisure==="golf_course" || e.tags?.type));
+        const holes=elements.filter(e=>e.tags?.golf==="hole");
+        diagnosticHoleWays=holes
+          .map(e=>({
+            hole:parseHole(e.tags),
+            id:e.id,
+            osmType:e.type,
+            tags:e.tags||{},
+            geometry:Array.isArray(e.geometry)?e.geometry.filter(p=>Number.isFinite(+p.lat)&&Number.isFinite(+p.lon)).map(p=>({lat:+p.lat,lon:+p.lon})):[]
+          }))
+          .filter(h=>Number.isInteger(h.hole) && h.hole>=1 && h.hole<=18 && h.geometry.length>=2);
+
+        const holeGroups={};
+        for(const h of holes){
+          const hole=parseHole(h.tags);
+          if(!holeGroups[hole||"?"]) holeGroups[hole||"?"]=[];
+          holeGroups[hole||"?"].push({
+            osm:`${h.type}/${h.id}`,
+            tags:compactTags(h.tags)
+          });
+        }
+
+        const result={
+          selectedCourse:{
+            courseId:courseId.value.trim(),
+            courseName:courseName.value.trim(),
+            center:{lat:+lat.value,lon:+lon.value},
+            radiusMeters:+radius.value
+          },
+          summary:{
+            golfCourseObjects:courses.length,
+            relations:relations.length,
+            golfHoleWays:holes.length,
+            duplicateHoleNumbers:Object.entries(holeGroups)
+              .filter(([k,v])=>k!=="?" && v.length>1)
+              .map(([k,v])=>({hole:Number(k),count:v.length}))
+          },
+          golfCourses:courses.map(e=>({
+            osm:`${e.type}/${e.id}`,
+            tags:compactTags(e.tags),
+            center:centerOf(e)
+          })),
+          relations:relations.map(e=>({
+            osm:`${e.type}/${e.id}`,
+            tags:compactTags(e.tags)
+          })),
+          holesByNumber:holeGroups
+        };
+
+        courseDiagOutput.value=JSON.stringify(result,null,2);
+        courseDiagStatus.textContent=
+          `Diagnostiikka valmis: golf course -kohteita ${courses.length}, relaatioita ${relations.length}, golf=hole -väyliä ${holes.length}.`;
+        courseDiagStatus.className="status ok";
+        courseDiagBtn.disabled=false;
+        return;
+      }catch(err){
+        lastErr=err;
+      }
+    }
+
+    courseDiagStatus.textContent=`Diagnostiikka epäonnistui: ${lastErr?.message||"tuntematon virhe"}`;
+    courseDiagStatus.className="status err";
+    courseDiagBtn.disabled=false;
+  }
+
+  function initHoleMapper(){
+    if(holeMapperMap) return;
+    holeMapperMap=L.map("holeMapperMap").setView([+lat.value,+lon.value],15);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
+      maxZoom:20,attribution:"&copy; OpenStreetMap contributors"
+    }).addTo(holeMapperMap);
+    holeMapperLayer=L.layerGroup().addTo(holeMapperMap);
+    holeMapperHole.innerHTML=Array.from({length:18},(_,i)=>`<option value="${i+1}">Reikä ${i+1}</option>`).join("");
+  }
+
+  function updateHoleMapperProgress(){
+    const count=Object.keys(lockedHoleWayIds).filter(k=>Number(k)>=1&&Number(k)<=18).length;
+    holeMapperProgress.textContent=`Valittu ${count}/18 väylää.`;
+  }
+
+  function renderHoleMapper(){
+    initHoleMapper();
+    holeMapperLayer.clearLayers();
+    const hole=Number(holeMapperHole.value||1);
+    const candidates=diagnosticHoleWays.filter(h=>h.hole===hole);
+
+    if(!candidates.length){
+      holeMapperStatus.textContent=`Reiälle ${hole} ei löytynyt väyläehdokkaita.`;
+      updateHoleMapperProgress();
+      return;
+    }
+
+    const bounds=[];
+    candidates.forEach((h,i)=>{
+      const key=holeWayKey(h);
+      const selected=lockedHoleWayIds[hole]===key;
+      const latlngs=h.geometry.map(p=>[p.lat,p.lon]);
+      bounds.push(...latlngs);
+      const line=L.polyline(latlngs,{
+        weight:selected?10:6,
+        opacity:selected?1:.75
+      }).addTo(holeMapperLayer);
+
+      const center=latlngs[Math.floor(latlngs.length/2)];
+      L.marker(center,{opacity:0.9})
+        .bindTooltip(`V${i+1}${selected?" ✓":""}`,{permanent:true,direction:"top"})
+        .addTo(holeMapperLayer);
+
+      line.bindPopup(
+        `<b>Reikä ${hole} — V${i+1}</b><br>${key}<br>`+
+        `<button type="button" class="primary mapper-select-way" data-hole="${hole}" data-key="${key}" style="margin-top:8px">Valitse Saraksen väyläksi</button>`
+      );
+      line.on("popupopen",()=>{
+        document.querySelectorAll(".mapper-select-way").forEach(btn=>{
+          if(btn.dataset.key===key){
+            btn.addEventListener("click",()=>{
+              lockedHoleWayIds[hole]=key;
+              holeMapperMap.closePopup();
+              renderHoleMapper();
+            },{once:true});
+          }
+        });
+      });
+    });
+
+    if(bounds.length) holeMapperMap.fitBounds(bounds,{padding:[50,50],maxZoom:17});
+    const chosen=lockedHoleWayIds[hole];
+    holeMapperStatus.textContent=chosen
+      ? `Reikä ${hole}: valittu ${chosen}. Ehdokkaita ${candidates.length}.`
+      : `Reikä ${hole}: ehdokkaita ${candidates.length}. Klikkaa oikeaa Saraksen väylälinjaa.`;
+    updateHoleMapperProgress();
+  }
+
+  function openHoleMapper(){
+    if(!diagnosticHoleWays.length){
+      courseDiagStatus.textContent="Aja ensin Tutki OSM-kenttärakenne.";
+      courseDiagStatus.className="status err";
+      return;
+    }
+    holeMapperOverlay.classList.add("open");
+    initHoleMapper();
+    setTimeout(()=>{
+      holeMapperMap.invalidateSize();
+      renderHoleMapper();
+    },50);
+  }
+
+  function downloadHoleMapping(){
+    const mapping={};
+    for(let h=1;h<=18;h++){
+      if(lockedHoleWayIds[h]) mapping[h]=lockedHoleWayIds[h];
+    }
+    const data={
+      schemaVersion:"0.1.0",
+      courseId:courseId.value.trim(),
+      courseName:courseName.value.trim(),
+      generatedAt:new Date().toISOString(),
+      holeWays:mapping
+    };
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json;charset=utf-8"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;
+    a.download=`${courseId.value.trim()||"course"}-hole-mapping.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+
+  function buildObstacleQuery(){
+    const la=+lat.value,lo=+lon.value,r=Math.max(500,+radius.value||3000);
+    if(!Number.isFinite(la)||!Number.isFinite(lo)) throw new Error("Kentän latitude/longitude ei ole kelvollinen.");
+    return `[out:json][timeout:35];
+(
+  node["golf"="bunker"](around:${r},${la},${lo});
+  way["golf"="bunker"](around:${r},${la},${lo});
+  relation["golf"="bunker"](around:${r},${la},${lo});
+  node["golf"="water_hazard"](around:${r},${la},${lo});
+  way["golf"="water_hazard"](around:${r},${la},${lo});
+  relation["golf"="water_hazard"](around:${r},${la},${lo});
+  node["golf"="lateral_water_hazard"](around:${r},${la},${lo});
+  way["golf"="lateral_water_hazard"](around:${r},${la},${lo});
+  relation["golf"="lateral_water_hazard"](around:${r},${la},${lo});
+  way["natural"="water"](around:${r},${la},${lo});
+  relation["natural"="water"](around:${r},${la},${lo});
+  way["golf"="hole"](around:${r},${la},${lo});
+);
+out tags center geom;`;
+  }
+
+  function obstacleType(e){
+    const g=e.tags?.golf;
+    if(g==="bunker") return "bunker";
+    if(g==="water_hazard" || g==="lateral_water_hazard") return "water";
+    if(e.tags?.natural==="water") return "water";
+    return "other";
+  }
+
+  function pointToHoleDistance(point,holeWay){
+    const pts=[...(holeWay.geometry||[]),...(holeWay.endpoints||[])];
+    if(!pts.length) return Infinity;
+    let best=Infinity;
+    for(const p of pts){
+      const d=haversineMeters(point.lat,point.lon,p.lat,p.lon);
+      if(d<best) best=d;
+    }
+    return best;
+  }
+
+  function pointToSegmentDistanceMeters(point,a,b){
+    const origin=point;
+    const A=localXY(a,origin);
+    const B=localXY(b,origin);
+    const vx=B.x-A.x, vy=B.y-A.y;
+    const wx=-A.x, wy=-A.y;
+    const vv=vx*vx+vy*vy;
+    if(vv<=0.0001) return Math.hypot(A.x,A.y);
+    let t=(wx*vx+wy*vy)/vv;
+    t=Math.max(0,Math.min(1,t));
+    const px=A.x+t*vx, py=A.y+t*vy;
+    return Math.hypot(px,py);
+  }
+
+  function pointToHoleDistance(point,holeWay){
+    const pts=(holeWay.geometry||[]).length ? holeWay.geometry : (holeWay.endpoints||[]);
+    if(!pts.length) return Infinity;
+    if(pts.length===1){
+      return haversineMeters(point.lat,point.lon,pts[0].lat,pts[0].lon);
+    }
+    let best=Infinity;
+    for(let i=0;i<pts.length-1;i++){
+      const d=pointToSegmentDistanceMeters(point,pts[i],pts[i+1]);
+      if(d<best) best=d;
+    }
+    return best;
+  }
+
+  function selectCourseHoleWays(holeWays){
+    // Saras ja Kirkka käyttävät samoja reikänumeroita.
+    // Valitaan jokaiselle reiälle se golf=hole-geometria,
+    // joka kulkee lähimpänä jo validoitua green-keskusta.
+    const selected=[];
+
+    for(let hole=1;hole<=18;hole++){
+      const green=greens.find(g=>!g.extra && g.selected && g.hole===hole);
+      const candidates=holeWays.filter(h=>h.hole===hole);
+      if(!green || !candidates.length) continue;
+
+      const greenPoint={lat:+green.lat,lon:+green.lon};
+      let best=null,bestDistance=Infinity;
+
+      for(const h of candidates){
+        const d=pointToHoleDistance(greenPoint,h);
+        if(d<bestDistance){
+          bestDistance=d;
+          best=h;
+        }
+      }
+
+      if(best && bestDistance<=120){
+        selected.push(best);
+      }
+    }
+    return selected;
+  }
+
+  function holeWayKey(h){
+    return `${h.osmType||"way"}/${h.id}`;
+  }
+
+  function applyLockedHoleWays(selected,rawHoleWays){
+    const byHole=new Map(selected.map(h=>[h.hole,h]));
+    for(const [holeStr,key] of Object.entries(lockedHoleWayIds)){
+      const hole=Number(holeStr);
+      const locked=rawHoleWays.find(h=>h.hole===hole && holeWayKey(h)===key);
+      if(locked) byHole.set(hole,locked);
+    }
+    return [...byHole.values()].sort((a,b)=>a.hole-b.hole);
+  }
+
+  function renderHoleCandidates(){
+    if(!map) initMap();
+    if(holeCandidateLayer) holeCandidateLayer.clearLayers();
+    else holeCandidateLayer=L.layerGroup().addTo(map);
+
+    const hole=Number(obstacleHoleFilter.value);
+    if(!Number.isInteger(hole)){
+      holeCandidateStatus.textContent="Valitse ensin yksittäinen reikä 1–18.";
+      return;
+    }
+
+    const candidates=obstacleHoleCandidates.filter(h=>h.hole===hole);
+    if(!candidates.length){
+      holeCandidateStatus.textContent=`Reiälle ${hole} ei löytynyt golf=hole-väyläehdokkaita.`;
+      return;
+    }
+
+    candidates.forEach((h,i)=>{
+      const pts=(h.geometry||[]).length?h.geometry:(h.endpoints||[]);
+      if(pts.length<2) return;
+      const key=holeWayKey(h);
+      const locked=lockedHoleWayIds[hole]===key;
+      const line=L.polyline(pts.map(p=>[p.lat,p.lon]),{
+        weight:locked?8:5,
+        opacity:locked?1:.75
+      }).addTo(holeCandidateLayer);
+
+      line.bindTooltip(`V${i+1}${locked?" ✓":""}`,{permanent:true,direction:"center"})
+        .bindPopup(
+          `<b>Reikä ${hole} – väyläehdokas V${i+1}</b><br>${key}<br>`+
+          `<button type="button" class="primary lock-hole-way" data-hole="${hole}" data-way-key="${key}" style="margin-top:8px">Valitse Saraksen väyläksi</button>`
+        );
+
+      line.on("popupopen",()=>{
+        document.querySelectorAll(".lock-hole-way").forEach(btn=>{
+          if(btn.dataset.wayKey===key){
+            btn.addEventListener("click",()=>{
+              lockedHoleWayIds[hole]=key;
+              map.closePopup();
+              holeCandidateStatus.textContent=`Reikä ${hole}: lukittu ${key}. Hae esteet uudelleen, jotta kohdistus käyttää tätä väylää.`;
+              clearHoleLockBtn.disabled=false;
+              renderHoleCandidates();
+            },{once:true});
+          }
+        });
+      });
+    });
+
+    holeCandidateStatus.textContent=lockedHoleWayIds[hole]
+      ? `Reikä ${hole}: väylä lukittu. Klikkaa viivaa vaihtaaksesi valintaa.`
+      : `Reikä ${hole}: ${candidates.length} väyläehdokasta. Klikkaa oikeaa Saraksen väyläviivaa ja valitse se.`;
+  }
+
+  function pointInPolygon(point, polygon){
+    let inside=false;
+    for(let i=0,j=polygon.length-1;i<polygon.length;j=i++){
+      const xi=polygon[i].lon, yi=polygon[i].lat;
+      const xj=polygon[j].lon, yj=polygon[j].lat;
+      const intersect=((yi>point.lat)!=(yj>point.lat)) &&
+        (point.lon < (xj-xi)*(point.lat-yi)/(yj-yi)+xi);
+      if(intersect) inside=!inside;
+    }
+    return inside;
+  }
+
+  function isInsideCourseBoundary(point){
+    if(!courseBoundaries.length) return true;
+    return courseBoundaries.some(poly=>poly.length>=3 && pointInPolygon(point,poly));
+  }
+
+  function assignObstaclesToHoles(holeWays, allHoleWays){
+    const FAIRWAY_CORRIDOR_METERS=90;
+    const OTHER_HOLE_MARGIN_METERS=15;
+
+    for(const o of obstacles){
+      o.hole=null;
+      o.holeDistance=null;
+      o.rejectedByOtherCourse=false;
+
+      if(!isInsideCourseBoundary(o.center)){
+        o.rejectedByOtherCourse=true;
+        continue;
+      }
+
+      let bestHole=null,bestDistance=Infinity;
+      let bestWay=null;
+
+      // Ensin etäisyys valitun kentän 18 lukittuun väylägeometriaan.
+      for(const h of holeWays){
+        if(!Number.isInteger(h.hole) || h.hole<1 || h.hole>18) continue;
+        const d=pointToHoleDistance(o.center,h);
+        if(d<bestDistance){
+          bestDistance=d;
+          bestHole=h.hole;
+          bestWay=h;
+        }
+      }
+
+      if(!bestHole || bestDistance>FAIRWAY_CORRIDOR_METERS) continue;
+
+      // Vertaa estettä KAIKKIIN muihin OSM:n golf=hole-geometrioihin,
+      // ei enää vain samaan reikänumeroon. Jos jokin muu väylä kulkee
+      // selvästi lähempänä estettä, este jätetään pois valitulta reiältä.
+      const otherWays=(allHoleWays||[]).filter(h=>h!==bestWay);
+
+      let otherDistance=Infinity;
+      for(const h of otherWays){
+        const d=pointToHoleDistance(o.center,h);
+        if(d<otherDistance) otherDistance=d;
+      }
+
+      if(
+        Number.isFinite(otherDistance) &&
+        otherDistance + OTHER_HOLE_MARGIN_METERS < bestDistance
+      ){
+        o.rejectedByOtherCourse=true;
+        continue;
+      }
+
+      o.hole=bestHole;
+      o.holeDistance=Math.round(bestDistance);
+    }
+  }
+
+  function visibleObstacles(){
+    const value=obstacleHoleFilter?.value||"assigned";
+    if(value==="all") return obstacles;
+    if(value==="assigned") return obstacles.filter(o=>Number.isInteger(o.hole) && o.review!=="rejected");
+    const hole=Number(value);
+    return obstacles.filter(o=>o.hole===hole);
+  }
+
+  function renderObstacles(){
+    if(!map) initMap();
+    if(obstacleLayer) {
+      obstacleLayer.clearLayers();
+    } else {
+      obstacleLayer=L.layerGroup().addTo(map);
+    }
+    if(holeCandidateLayer) holeCandidateLayer.clearLayers();
+
+    const shown=visibleObstacles();
+    let bunkers=0, waters=0, rejected=0;
+
+    shown.forEach(o=>{
+      if(o.kind==="bunker") bunkers++;
+      if(o.kind==="water") waters++;
+      if(o.review==="rejected") rejected++;
+
+      const c=o.center;
+      if(!c) return;
+
+      const label=o.kind==="bunker" ? `B${bunkers}` : `W${waters}`;
+      const fill=o.review==="rejected"
+        ? "#b91c1c"
+        : (o.kind==="bunker" ? "#d99b2b" : "#2f80ed");
+
+      const holeText=Number.isInteger(o.hole)?`Reikä ${o.hole}`:"Ei kohdistettu";
+      const reviewText=o.review==="rejected" ? "Hylätty" : "Mukana";
+
+      const marker=L.circleMarker([c.lat,c.lon],{
+        radius:8,color:"#ffffff",weight:2,fillColor:fill,fillOpacity:.95
+      }).bindTooltip(label,{permanent:true,direction:"center",className:"green-label"})
+        .bindPopup(
+          `<b>${o.kind==="bunker"?"Bunkkeri":"Vesi"}</b><br>` +
+          `${holeText}<br>${o.osmType}/${o.id}` +
+          `${o.holeDistance!=null?`<br>Etäisyys väylästä ${o.holeDistance} m`:""}` +
+          `<br>Tila: <b>${reviewText}</b>` +
+          (Number.isInteger(o.hole)
+            ? `<div style="display:flex;gap:6px;margin-top:8px">
+                 ${o.review==="rejected"
+                   ? `<button type="button" class="primary obstacle-restore" data-obstacle-id="${o.osmType}/${o.id}">Palauta mukaan</button>`
+                   : `<button type="button" class="danger obstacle-reject" data-obstacle-id="${o.osmType}/${o.id}">Hylkää ylimääräinen</button>`}
+               </div>`
+            : "")
+        )
+        .addTo(obstacleLayer);
+
+      marker.on("popupopen",()=>{
+        const key=`${o.osmType}/${o.id}`;
+        document.querySelectorAll(".obstacle-reject").forEach(btn=>{
+          if(btn.dataset.obstacleId===key){
+            btn.addEventListener("click",()=>{
+              o.review="rejected";
+              map.closePopup();
+              renderObstacles();
+            },{once:true});
+          }
+        });
+        document.querySelectorAll(".obstacle-restore").forEach(btn=>{
+          if(btn.dataset.obstacleId===key){
+            btn.addEventListener("click",()=>{
+              o.review=null;
+              map.closePopup();
+              renderObstacles();
+            },{once:true});
+          }
+        });
+      });
+    });
+
+    const assigned=obstacles.filter(o=>Number.isInteger(o.hole)).length;
+    const totalRejected=obstacles.filter(o=>Number.isInteger(o.hole) && o.review==="rejected").length;
+    const kept=assigned-totalRejected;
+    const unassigned=obstacles.length-assigned;
+
+    obstacleSummary.textContent=
+      `Näytetään ${shown.length} · Bunkkereita ${bunkers} · Vesiä ${waters} · ` +
+      `Mukana ${kept} · Hylätty ${totalRejected} · ` +
+      `Kohdistettu väylille ${assigned}/${obstacles.length} · Kohdistamatta ${unassigned}`;
+
+    clearObstaclesBtn.disabled=obstacles.length===0;
+    reviewObstaclesBtn.disabled=obstacles.length===0;
+    downloadReviewedObstaclesBtn.disabled=kept===0;
+  }
+
+  function buildReviewedObstacleJson(){
+    const kept=obstacles
+      .filter(o=>Number.isInteger(o.hole) && o.review!=="rejected")
+      .sort((a,b)=>a.hole-b.hole || a.kind.localeCompare(b.kind))
+      .map(o=>({
+        hole:o.hole,
+        type:o.kind,
+        point:{lat:+o.center.lat,lon:+o.center.lon},
+        source:{
+          type:"openstreetmap",
+          osmType:o.osmType,
+          osmId:o.id
+        }
+      }));
+
+    return {
+      schemaVersion:"0.1.0",
+      courseId:courseId.value.trim(),
+      courseName:courseName.value.trim(),
+      generatedAt:new Date().toISOString(),
+      reviewMode:"reject-extras",
+      obstacles:kept
+    };
+  }
+
+  function downloadReviewedObstacles(){
+    const data=buildReviewedObstacleJson();
+    const json=JSON.stringify(data,null,2);
+    const blob=new Blob([json],{type:"application/json;charset=utf-8"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    const id=courseId.value.trim()||"course";
+    a.href=url;
+    a.download=`${id}-obstacles.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    setMapStatus(`Tarkistetut esteet ladattu: ${data.obstacles.length} kohdetta.`,"ok");
+  }
+
+  async function fetchObstacles(){
+    obstacleBtn.disabled=true;
+    obstacleStatus.textContent="Haetaan bunkkereita, vesiesteitä ja väylägeometriaa OpenStreetMapista…";
+    obstacleStatus.className="status";
+    const query=buildObstacleQuery();
+    let lastErr=null;
+    for(const endpoint of endpoints){
+      try{
+        const data=await fetchOverpassWithFallback(endpoint,query);
+
+        courseBoundaries=(data.elements||[])
+          .filter(e=>e.tags?.leisure==="golf_course" && Array.isArray(e.geometry))
+          .map(e=>e.geometry.filter(p=>Number.isFinite(+p.lat)&&Number.isFinite(+p.lon)).map(p=>({lat:+p.lat,lon:+p.lon})))
+          .filter(p=>p.length>=3);
+
+        const obstacleHoleWays=(data.elements||[])
+          .filter(e=>e.tags?.golf==="hole")
+          .map(e=>({
+            hole:parseHole(e.tags),
+            endpoints:endpointsOf(e),
+            geometry:Array.isArray(e.geometry)?e.geometry.filter(p=>Number.isFinite(+p.lat)&&Number.isFinite(+p.lon)).map(p=>({lat:+p.lat,lon:+p.lon})):[],
+            id:e.id,
+            osmType:e.type,
+            tags:e.tags||{}
+          }))
+          .filter(h=>h.hole && (h.geometry.length || h.endpoints.length));
+
+        const rawHoleWays=obstacleHoleWays.length?obstacleHoleWays:golfHoleWays;
+        obstacleHoleCandidates=rawHoleWays;
+        const courseHoleWays=selectCourseHoleWays(rawHoleWays);
+        const autoHoleWays=courseHoleWays.length>=14 ? courseHoleWays : rawHoleWays;
+        const holeWays=applyLockedHoleWays(autoHoleWays,rawHoleWays);
+
+        const excludedPeurunkaObstacles = new Set([
+          "way/87234507",
+          "way/87823499",
+          "way/87823498"
+        ]);
+
+        obstacles=(data.elements||[])
+          .filter(e=>e.tags?.golf!=="hole")
+          .map(e=>({
+            id:e.id,
+            osmType:e.type,
+            tags:e.tags||{},
+            kind:obstacleType(e),
+            center:centerOf(e),
+            geometry:Array.isArray(e.geometry)?e.geometry:[],
+            review:null
+          }))
+          .filter(o=>!excludedPeurunkaObstacles.has(`${o.osmType}/${o.id}`))
+          .filter(o=>o.kind!=="other" && o.center);
+
+        assignObstaclesToHoles(holeWays, rawHoleWays);
+        obstacleHoleFilter.value="assigned";
+        renderObstacles();
+
+        const assigned=obstacles.filter(o=>Number.isInteger(o.hole)).length;
+        const rejectedOtherCourse=obstacles.filter(o=>o.rejectedByOtherCourse).length;
+        const selectedHoleCount=new Set(holeWays.map(h=>h.hole)).size;
+        obstacleStatus.textContent=
+          `Estehaku valmis. Valitun kentän väyliä ${selectedHoleCount}/18. ${assigned}/${obstacles.length} estettä kohdistettu. Muun väylägeometrian läheisyyden vuoksi hylätty ${rejectedOtherCourse}.`;
+        obstacleStatus.className="status ok";
+        obstacleBtn.disabled=false;
+        showHoleCandidatesBtn.disabled=false;
+        clearHoleLockBtn.disabled=Object.keys(lockedHoleWayIds).length===0;
+        return;
+      }catch(err){
+        lastErr=err;
+      }
+    }
+    obstacleStatus.textContent=`Estehaku epäonnistui: ${lastErr?.message||"tuntematon virhe"}`;
+    obstacleStatus.className="status err";
+    obstacleBtn.disabled=false;
+  }
+
+  async function fetchOverpassWithFallback(endpoint,query){
+    const attempts=[
+      async()=>{
+        const controller=new AbortController();
+        const timer=setTimeout(()=>controller.abort(),25000);
+        try{
+          const response=await fetch(endpoint,{
+            method:"POST",
+            headers:{
+              "Content-Type":"application/x-www-form-urlencoded;charset=UTF-8",
+              "Accept":"application/json"
+            },
+            body:"data="+encodeURIComponent(query),
+            cache:"no-store",
+            signal:controller.signal
+          });
+          if(!response.ok) throw new Error(`POST HTTP ${response.status}`);
+          return await response.json();
+        }finally{
+          clearTimeout(timer);
+        }
+      },
+      async()=>{
+        const controller=new AbortController();
+        const timer=setTimeout(()=>controller.abort(),25000);
+        try{
+          const response=await fetch(
+            `${endpoint}?data=${encodeURIComponent(query)}&v=${Date.now()}`,
+            {
+              method:"GET",
+              headers:{"Accept":"application/json"},
+              cache:"no-store",
+              signal:controller.signal
+            }
+          );
+          if(!response.ok) throw new Error(`GET HTTP ${response.status}`);
+          return await response.json();
+        }finally{
+          clearTimeout(timer);
+        }
+      }
+    ];
+
+    let lastError=null;
+    for(const attempt of attempts){
+      try{
+        const data=await attempt();
+        if(!Array.isArray(data?.elements)){
+          throw new Error("Virheellinen Overpass-vastaus");
+        }
+        return data;
+      }catch(err){
+        lastError=err;
+        console.warn("Overpass-yritys epäonnistui:",endpoint,err);
+      }
+    }
+    throw lastError||new Error("Overpass-haku epäonnistui");
+  }
+
+
+  function endpointsOf(element){
+    const geometry=Array.isArray(element?.geometry)
+      ? element.geometry.filter(p=>Number.isFinite(+p.lat)&&Number.isFinite(+p.lon))
+      : [];
+    if(!geometry.length) return [];
+    return [
+      {lat:+geometry[0].lat,lon:+geometry[0].lon},
+      {lat:+geometry[geometry.length-1].lat,lon:+geometry[geometry.length-1].lon}
+    ];
+  }
+
+  function radians(v){ return Number(v)*Math.PI/180; }
+
+  function haversineMeters(lat1,lon1,lat2,lon2){
+    const R=6371000;
+    const p1=radians(lat1), p2=radians(lat2);
+    const dp=radians(lat2-lat1), dl=radians(lon2-lon1);
+    const a=Math.sin(dp/2)**2 + Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
+    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+  }
+
+  function autoAssignGreens(golfHoles){
+    greens.forEach(g=>{
+      g.autoAssigned=false;
+      g.autoDistance=null;
+    });
+
+    const usedGreenIndexes=new Set();
+
+    greens.forEach((g,index)=>{
+      if(Number.isInteger(g.hole) && g.hole>=1 && g.hole<=18){
+        g.selected=true;
+        usedGreenIndexes.add(index);
+      }
+    });
+
+    for(const holeWay of golfHoles){
+      const hole=holeWay.hole;
+      if(!Number.isInteger(hole) || hole<1 || hole>18) continue;
+      if(greens.some(g=>g.hole===hole && !g.extra)) continue;
+
+      let best=null;
+      greens.forEach((g,index)=>{
+        if(g.extra || usedGreenIndexes.has(index)) return;
+        holeWay.endpoints.forEach(ep=>{
+          const d=haversineMeters(ep.lat,ep.lon,g.lat,g.lon);
+          if(!best || d<best.distance){
+            best={index,distance:d};
+          }
+        });
+      });
+
+      if(best && best.distance<=160){
+        const g=greens[best.index];
+        g.hole=hole;
+        g.selected=true;
+        g.autoAssigned=true;
+        g.autoDistance=best.distance;
+        usedGreenIndexes.add(best.index);
+      }
+    }
+  }
+
+  function applyGumboleVerifiedMapping(){
+    if((courseId.value||"").trim()!=="gumbole") return false;
+    const verified={
+      1:1,2:22,3:23,4:24,5:25,6:26,7:27,8:28,9:2,
+      10:29,11:30,12:31,13:32,14:33,15:34,16:35,17:36,18:3
+    };
+    if(greens.length<36) return false;
+    greens.forEach(g=>{
+      g.hole=null; g.selected=false; g.extra=true;
+      g.autoAssigned=false; g.autoDistance=null;
+    });
+    for(const [hole,gNumber] of Object.entries(verified)){
+      const g=greens[gNumber-1];
+      if(!g) return false;
+      g.hole=Number(hole); g.selected=true; g.extra=false;
+      g.autoAssigned=false; g.autoDistance=null;
+    }
+    return true;
+  }
+
+  function applyPorvooKnownChanges(){
+    if((courseId.value||"").trim()!=="porvoogolf") return;
+    greens.forEach(g=>{
+      if([4,5,6,7].includes(g.hole)){
+        g.hole=null;
+        g.selected=false;
+        g.autoAssigned=false;
+        g.autoDistance=null;
+      }
+    });
+  }
+
+  function partialExportHoles(){
+    if((courseId.value||"").trim()==="porvoogolf"){
+      return new Set([1,2,3,8,9,10,11,12,13,14,15,16,17,18]);
+    }
+    return null;
+  }
+
+  async function fetchData(){
+    const query=buildQuery();
+    fetchBtn.disabled=true;
+    lastJson=null;output.value="";downloadBtn.disabled=true;
+    let lastError=null;
+
+    // Course Library voidaan ladata rinnalla; Overpass-haku ei riipu siitä.
+    if(!courseByHole.size){
+      loadCourseLibrary();
+    }
+
+    for(const endpoint of endpoints){
+      try{
+        setStatus(`Haetaan greenejä: ${endpoint}`);
+        const data=await fetchOverpassWithFallback(endpoint,query);
+
+        const golfHoles=(data.elements||[])
+          .filter(e=>e.tags?.golf==="hole")
+          .map(e=>({
+            hole:parseHole(e.tags),
+            endpoints:endpointsOf(e),
+            geometry:Array.isArray(e.geometry)?e.geometry.filter(p=>Number.isFinite(+p.lat)&&Number.isFinite(+p.lon)).map(p=>({lat:+p.lat,lon:+p.lon})):[],
+            id:e.id,
+            tags:e.tags||{}
+          }))
+          .filter(h=>h.hole && h.endpoints.length);
+        golfHoleWays=golfHoles;
+
+        const manualGreens=greens.filter(g=>g.manual);
+
+        greens=(data.elements||[])
+          .filter(e=>e.tags?.golf==="green")
+          .map(e=>{
+            const c=centerOf(e); if(!c) return null;
+            const hole=parseHole(e.tags);
+            return {
+              hole,
+              lat:c.lat,
+              lon:c.lon,
+              geometry:Array.isArray(e.geometry)?e.geometry.filter(p=>Number.isFinite(+p.lat)&&Number.isFinite(+p.lon)).map(p=>({lat:+p.lat,lon:+p.lon})):[],
+              type:e.type,
+              id:e.id,
+              tags:e.tags||{},
+              selected:!!hole,
+              extra:false,
+              autoAssigned:false,
+              autoDistance:null
+            };
+          }).filter(Boolean);
+
+        autoAssignGreens(golfHoles);
+        applyPorvooKnownChanges();
+        const gumboleVerified=applyGumboleVerifiedMapping();
+
+        // Säilytä käsin määritellyt F/C/B-greenit OSM-haun yli.
+        // Manuaalinen määritys on ensisijainen, jos OSM yhdistää saman reiän.
+        const manualHoles=new Set(manualGreens.filter(g=>g.hole).map(g=>g.hole));
+        if(manualHoles.size){
+          for(const g of greens){
+            if(g.hole && manualHoles.has(g.hole)){
+              g.hole=null;
+              g.selected=false;
+              g.autoAssigned=false;
+              g.autoDistance=null;
+            }
+          }
+        }
+        greens.push(...manualGreens);
+
+        render();
+        renderMap();
+
+        const autoCount=greens.filter(g=>g.autoAssigned).length;
+        const safeSet=partialExportHoles();
+        const safeCount=safeSet ? greens.filter(g=>safeSet.has(g.hole)).length : greens.filter(g=>g.hole).length;
+
+        setStatus(
+          gumboleVerified
+            ? `Löytyi ${greens.length} greeniä. Gumbölen 18/18 varmennettua greeniä yhdistetty automaattisesti; muut hakutulokset jätetty pois.`
+            : (`Löytyi ${greens.length} greeniä. Automaattisesti yhdistetty ${autoCount}. ` +
+               (safeSet ? `Porvoon varmoja testireikiä ${safeCount}/14.` : `Numeroitu ${safeCount}/18.`)),
+          greens.length>=18?"ok":"warn"
+        );
+        fetchBtn.disabled=false;
+        return;
+      }catch(err){
+        console.warn(endpoint,err);
+        lastError=err;
+      }
+    }
+
+    fetchBtn.disabled=false;
+    setStatus(
+      "Kaikki Overpass-palvelimet epäonnistuivat. " +
+      (lastError?.message||"Tuntematon verkkovirhe") +
+      ". Kokeile hetken päästä uudelleen.",
+      "err"
+    );
+  }
+
+  function sortRows(){
+    greens.sort((a,b)=>{
+      if(a.extra!==b.extra) return a.extra?1:-1;
+      return (a.hole||999)-(b.hole||999);
+    });
+    render();renderMap();
+  }
+
+
+  function avgPoint(points){
+    const pts=(points||[]).filter(p=>Number.isFinite(+p.lat)&&Number.isFinite(+p.lon));
+    if(!pts.length) return null;
+    return {
+      lat:pts.reduce((s,p)=>s+(+p.lat),0)/pts.length,
+      lon:pts.reduce((s,p)=>s+(+p.lon),0)/pts.length
+    };
+  }
+
+  function localXY(point,origin){
+    const R=6371000;
+    const lat0=radians(origin.lat);
+    return {
+      x:radians(point.lon-origin.lon)*R*Math.cos(lat0),
+      y:radians(point.lat-origin.lat)*R
+    };
+  }
+
+  function frontCenterBackForGreen(g){
+    const center={lat:+g.lat,lon:+g.lon};
+    if(g.manual && g.manualFront && g.manualCenter && g.manualBack){
+      return {
+        front:{lat:+g.manualFront.lat,lon:+g.manualFront.lon},
+        center:{lat:+g.manualCenter.lat,lon:+g.manualCenter.lon},
+        back:{lat:+g.manualBack.lat,lon:+g.manualBack.lon},
+        method:'manual-front-center-back'
+      };
+    }
+    if(g.manual) return {front:null,center,back:null,method:'manual-center-only'};
+    const geom=(g.geometry||[]).filter(p=>Number.isFinite(+p.lat)&&Number.isFinite(+p.lon));
+    if(geom.length<2) return {front:null,center,back:null,method:'center-only'};
+
+    const hole=golfHoleWays.find(h=>h.hole===g.hole);
+    if(!hole) return {front:null,center,back:null,method:'center-only'};
+
+    const candidates=[...(hole.endpoints||[]),...(hole.geometry||[])];
+    if(!candidates.length) return {front:null,center,back:null,method:'center-only'};
+
+    let approach=null,best=-1;
+    for(const p of candidates){
+      const d=haversineMeters(p.lat,p.lon,center.lat,center.lon);
+      if(d>best){best=d;approach=p;}
+    }
+    if(!approach) return {front:null,center,back:null,method:'center-only'};
+
+    const av=localXY(center,approach);
+    const len=Math.hypot(av.x,av.y);
+    if(len<1) return {front:null,center,back:null,method:'center-only'};
+    const ux=av.x/len,uy=av.y/len;
+
+    let minP=null,maxP=null,minProj=Infinity,maxProj=-Infinity;
+    for(const p of geom){
+      const v=localXY(p,center);
+      const proj=v.x*ux+v.y*uy;
+      if(proj<minProj){minProj=proj;minP=p;}
+      if(proj>maxProj){maxProj=proj;maxP=p;}
+    }
+    return {
+      front:minP?{lat:+(+minP.lat).toFixed(7),lon:+(+minP.lon).toFixed(7)}:null,
+      center:{lat:+center.lat.toFixed(7),lon:+center.lon.toFixed(7)},
+      back:maxP?{lat:+(+maxP.lat).toFixed(7),lon:+(+maxP.lon).toFixed(7)}:null,
+      method:'green-geometry + golf-hole approach direction'
+    };
+  }
+
+  function buildJson(){
+    const v=validation();
+    if(!v.exportable){
+      setBuild("GPS-exportti ei ole vielä valmis.","err");
+      return;
+    }
+
+    const selected=greens
+      .filter(g=>Number.isInteger(g.hole) && v.exportHoles.includes(g.hole))
+      .sort((a,b)=>a.hole-b.hole);
+
+    lastJson={
+      schemaVersion:"1.2",
+      libraryVersion:"1.0.0",
+      courseId:courseId.value.trim(),
+      course:courseName.value.trim(),
+      country:(country.value.trim()||"FI"),
+      mode:"green-front-center-back",
+      generatedAt:new Date().toISOString(),
+      source:"OpenStreetMap / Overpass + Course Library",
+      partial:!!v.safeSet,
+      unavailableHoles:v.safeSet?[4,5,6,7]:[],
+      fieldValidation:{
+        status:"pending",
+        referenceDevice:"Garmin",
+        notes:v.safeSet
+          ? "Porvoo holes 4-7 intentionally excluded because the course layout changed. Verify holes 1-3 and 8-18 on course."
+          : "Verify Green Front / Center / Back distances on course before marking validated."
+      },
+      holes:selected.map(g=>{
+        const fcb=frontCenterBackForGreen(g);
+        return {
+          hole:g.hole,
+          greenFront:fcb.front,
+          greenCenter:fcb.center,
+          greenBack:fcb.back,
+          source:{
+            provider:g.manual?"Manual":"OpenStreetMap",
+            osmElement:g.manual?null:`${g.type}/${g.id}`,
+            assignedWith:g.manual?"GPS Builder manual map click":(g.autoAssigned?"golf=hole auto-match":"GPS Builder map/manual"),
+            matchDistanceMeters:g.autoDistance==null?null:Math.round(g.autoDistance),
+            edgeMethod:fcb.method,
+            verified:false
+          }
+        };
+      })
+    };
+
+    output.value=JSON.stringify(lastJson,null,2);
+    downloadBtn.disabled=false;
+    setBuild(
+      v.safeSet
+        ? "Porvoon 14 reiän testidata muodostettu. Reiät 4–7 jätetty pois tarkoituksella."
+        : "18/18 reikää muodostettu Front / Center / Back -datalla. JSON on valmis ladattavaksi GPS Libraryyn.",
+      "ok"
+    );
+  }
+
+  function downloadJson(){
+    if(!lastJson)return;
+    const safe=(courseId.value.trim()||"course").replace(/[^a-z0-9_-]+/gi,"-").toLowerCase();
+    const blob=new Blob([JSON.stringify(lastJson,null,2)+"\n"],{type:"application/json"});
+    const url=URL.createObjectURL(blob),a=document.createElement("a");
+    a.href=url;a.download=`${safe}.json`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+  }
+
+
+  async function loadGpsGreenLibrary(id){
+    if(id!=="peurunkagolf") return;
+    try{
+      const candidates=[
+        `${repoBasePath()}/data/gps/FI/peurunkagolf.json?v=0.7.14`,
+        `../data/gps/FI/peurunkagolf.json?v=0.7.14`
+      ];
+      const result=await fetchJsonCandidates(candidates);
+      const data=result.data;
+      const holes=Array.isArray(data.holes)?data.holes:[];
+      greens=holes.map((h,i)=>({
+        hole:Number(h.hole),
+        lat:Number(h.greenCenter.lat),
+        lon:Number(h.greenCenter.lon),
+        geometry:[],
+        type:"course-library",
+        id:`peurunka-${h.hole}`,
+        tags:{},
+        selected:true,
+        extra:false,
+        autoAssigned:true,
+        autoDistance:null,
+        manualFront:h.greenFront,
+        manualCenter:h.greenCenter,
+        manualBack:h.greenBack
+      })).filter(g=>Number.isFinite(g.lat)&&Number.isFinite(g.lon));
+      render();
+      renderMap();
+      setStatus(`Peurunka GPS Library ladattu: ${greens.length}/18 greeniä`,"ok");
+    }catch(err){
+      console.warn("Peurunka GPS Library lataus epäonnistui",err);
+    }
+  }
+
+  function preset(name,id,la,lo,r=3200){
+    courseName.value=name;courseId.value=id;lat.value=la;lon.value=lo;radius.value=r;
+    greens=[];lastJson=null;output.value="";downloadBtn.disabled=true;
+    setStatus("Esiasetus valittu. Paina Hae greenit OpenStreetMapista.");
+    setBuild("JSONia ei ole vielä muodostettu.");
+    render();
+    if(initMap()) map.setView([la,lo],14);
+    renderMap();
+    loadCourseLibrary();
+    loadGpsGreenLibrary(id);
+  }
+
+  fetchBtn.addEventListener("click",fetchData);
+  $("manualGreenBtn").addEventListener("click",()=>{
+    if(!initMap()) return;
+    const holeText=window.prompt("Mille reiälle lisätään Front / Center / Back? Anna reikä 1–18.");
+    const hole=Number(holeText);
+    if(!Number.isInteger(hole)||hole<1||hole>18){
+      manualGreenMode=false;
+      manualGreenDraft=null;
+      setMapStatus("Greenin lisäys peruttu: anna reiän numero 1–18.","warn");
+      return;
+    }
+    manualGreenMode=true;
+    manualGreenDraft={hole,front:null,center:null,back:null};
+    setMapStatus(`Reikä ${hole}: klikkaa ensin greenin FRONT-pistettä.`,"warn");
+  });
+  sortBtn.addEventListener("click",sortRows);
+  clearBtn.addEventListener("click",()=>{
+    greens=[];lastJson=null;output.value="";downloadBtn.disabled=true;
+    render();renderMap();setStatus("Lista tyhjennetty.");
+  });
+  buildBtn.addEventListener("click",buildJson);
+  downloadBtn.addEventListener("click",downloadJson);
+  courseDiagBtn.addEventListener("click",runCourseDiagnostics);
+  openHoleMapperBtn.addEventListener("click",openHoleMapper);
+  holeMapperClose.addEventListener("click",()=>holeMapperOverlay.classList.remove("open"));
+  holeMapperHole.addEventListener("change",renderHoleMapper);
+  holeMapperPrev.addEventListener("click",()=>{
+    const h=Math.max(1,Number(holeMapperHole.value)-1);
+    holeMapperHole.value=String(h); renderHoleMapper();
+  });
+  holeMapperNext.addEventListener("click",()=>{
+    const h=Math.min(18,Number(holeMapperHole.value)+1);
+    holeMapperHole.value=String(h); renderHoleMapper();
+  });
+  downloadHoleMappingBtn.addEventListener("click",downloadHoleMapping);
+  obstacleBtn.addEventListener("click",fetchObstacles);
+  showHoleCandidatesBtn.addEventListener("click",renderHoleCandidates);
+  clearHoleLockBtn.addEventListener("click",()=>{
+    const hole=Number(obstacleHoleFilter.value);
+    if(Number.isInteger(hole) && lockedHoleWayIds[hole]){
+      delete lockedHoleWayIds[hole];
+      holeCandidateStatus.textContent=`Reikä ${hole}: väylälukitus poistettu.`;
+      clearHoleLockBtn.disabled=Object.keys(lockedHoleWayIds).length===0;
+      renderHoleCandidates();
+    }else{
+      holeCandidateStatus.textContent="Valitse yksittäinen reikä, jolla on väylälukitus.";
+    }
+  });
+  reviewObstaclesBtn.addEventListener("click",()=>{
+    if(!obstacles.length) return;
+    obstacleReviewMode=true;
+    if(obstacleHoleFilter.value==="assigned") obstacleHoleFilter.value="1";
+    setMapStatus("Esteiden tarkistus: kaikki automaattisesti kohdistetut esteet ovat oletuksena mukana. Valitse reikä ja hylkää vain ylimääräiset B/W-merkinnät.","warn");
+    renderObstacles();
+  });
+  downloadReviewedObstaclesBtn.addEventListener("click",downloadReviewedObstacles);
+  obstacleHoleFilter.addEventListener("change",renderObstacles);
+  clearObstaclesBtn.addEventListener("click",()=>{
+    obstacles=[];
+    obstacleReviewMode=false;
+    if(obstacleLayer) obstacleLayer.clearLayers();
+    obstacleSummary.textContent="";
+    obstacleHoleFilter.value="assigned";
+    obstacleStatus.textContent="Esteet piilotettu.";
+    obstacleStatus.className="status";
+    clearObstaclesBtn.disabled=true;
+  });
+
+  function finishManualWater(){
+    if(manualWaterPoints.length<3){setMapStatus("Tarvitaan vähintään 3 pistettä vesiesteelle.","err");return;}
+    const hole=Number(obstacleHoleFilter.value);
+    const manualId="manual-water-"+Date.now();
+    const manualWater={
+      type:"water",
+      kind:"water",
+      hole:Number.isInteger(hole)?hole:null,
+      manual:true,
+      geometry:manualWaterPoints.slice(),
+      id:manualId,
+      osmType:"manual"
+    };
+    manualWaters.push(manualWater);
+    obstacles.push({
+      kind:"water",
+      hole:manualWater.hole,
+      id:manualId,
+      osmType:"manual",
+      manual:true,
+      geometry:manualWater.geometry,
+      center:centerOf({geometry:manualWater.geometry}),
+      tags:{source:"manual"}
+    });
+    if(!manualWaterLayer) manualWaterLayer=L.layerGroup().addTo(map);
+    manualWaterMode=false;
+    setMapStatus("Käsin lisätty vesi tallennettu.","ok");
+    manualWaterPoints=[];
+    renderObstacles();
+  }
+  manualWaterBtn.addEventListener("click",()=>{
+    manualWaterMode=true; manualWaterPoints=[];
+    if(!manualWaterLayer) manualWaterLayer=L.layerGroup().addTo(map);
+    manualWaterLayer.clearLayers();
+    setMapStatus("Klikkaa veden rajapisteet kartalta. Sulje alue kaksoisklikkaamalla Lisää vesi käsin -painiketta uudelleen.","warn");
+    const old=manualWaterBtn.textContent;
+    manualWaterBtn.textContent="Sulje vesi";
+    manualWaterBtn.onclick=()=>{manualWaterBtn.textContent=old; finishManualWater();};
+  });
+
+  $("porvooBtn").addEventListener("click",()=>preset("Porvoo Golf","porvoogolf",60.4218,25.6952,3200));
+  $("gumboleBtn").addEventListener("click",()=>preset("Gumböle Golf","gumbole",60.223967,24.611271,3200));
+  $("peurunkaBtn").addEventListener("click",()=>preset("Laukaan Peurunkagolf","peurunkagolf",62.434565,25.868707,3200));
+  $("keimolaSarasBtn").addEventListener("click",()=>preset("Keimola Saras","keimola-saras",60.3207772,24.8044882,3200));
+
+  window.addEventListener("load",()=>{
+    initMap();
+    render();
+    loadCourseLibrary();
+  });
+})();
+</script>
+
+</body>
+</html>
+
+<script>
+(async()=>{
+ const s=document.getElementById("builderCourseSelect");
+ if(!s)return;
+ try{
+  const data=await (await fetch("../data/source/gps-builder-courses.json?v=080")).json();
+  data.forEach(c=>{
+   const o=document.createElement("option");
+   o.textContent=c.name;
+   o.value=c.courseId;
+   o.dataset.course=JSON.stringify(c);
+   s.appendChild(o);
+  });
+  s.onchange=()=>{
+   const c=JSON.parse(s.selectedOptions[0].dataset.course);
+   courseName.value=c.name;
+   courseId.value=c.courseId;
+   lat.value=c.lat;
+   lon.value=c.lon;
+   radius.value=c.radius;
+   country.value=c.country;
+  };
+ }catch(e){console.log(e);}
+})();
+</script>

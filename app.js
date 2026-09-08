@@ -1,5 +1,8 @@
 "use strict";
-        const APP_VERSION = document.querySelector('meta[name="app-version"]')?.content || "3.7.5";
+
+// Player gender separation v0.11: working scoring/voice base + M/N selector.
+
+        const APP_VERSION = document.querySelector('meta[name="app-version"]')?.content || "3.7.6";
         const UPDATE_CHECK_URL = "version.json";
 
         async function updateToLatestVersionIfNeeded() {
@@ -26,15 +29,16 @@
             }
         }
 
-
         const STORAGE_KEY = "golfTuloslaskuriV2";
         const HISTORY_KEY = "golfTuloslaskuriHistory";
         const MAX_PLAYERS = 4;
+        const GPS_DISTANCE_ACCURACY_LIMIT_METERS = 15;
 
         let playerCount = 1;
         let roundSetupConfirmed = false;
         let nextHole = 1;
         let startHole = 1;
+        let roundHoleCount = 18;
         let roundComplete = false;
         let frontNineAnnounced = false;
         let pendingVoiceMessage = "";
@@ -47,6 +51,7 @@
         let selectedGender = "";
         let manualNineView = null;
         let playerHandicaps = Array(MAX_PLAYERS).fill("");
+        let playerGenders = Array(MAX_PLAYERS).fill("Miehet");
         let playerTees = Array(MAX_PLAYERS).fill("");
 
         const tableBody = document.getElementById("tableBody");
@@ -54,8 +59,12 @@
         const voiceButton = document.getElementById("voiceButton");
         const nextHoleElement = document.getElementById("nextHole");
         const startHoleInput = document.getElementById("startHoleInput");
+        const roundHoleCountInput = document.getElementById("roundHoleCount");
         const compactNextHoleElement =
             document.getElementById("compactNextHole");
+        const activeHoleLabel = document.getElementById("activeHoleLabel");
+        const activeHoleHelp = document.getElementById("activeHoleHelp");
+        const compactHoleLabel = document.getElementById("compactHoleLabel");
         const roundCompleteModal = document.getElementById("roundCompleteModal");
         const roundCompleteActions = document.getElementById("roundCompleteActions");
         const savedMessage = document.getElementById("savedMessage");
@@ -82,6 +91,17 @@
         const playerHcpInputs = Array.from({ length: MAX_PLAYERS }, (_, index) =>
             document.getElementById(`playerHcp${index + 1}`)
         );
+        const playerGenderSelects = Array.from({ length: MAX_PLAYERS }, (_, index) =>
+            document.getElementById(`playerGender${index + 1}`)
+        );
+
+        const playerGenderTriggers = Array.from(document.querySelectorAll(".player-name"));
+        const playerGenderMarks = Array.from(document.querySelectorAll(".player-gender-trigger"));
+        const playerGenderModal = document.getElementById("playerGenderModal");
+        const playerGenderModalPlayer = document.getElementById("playerGenderModalPlayer");
+        const playerGenderModalCancel = document.getElementById("playerGenderModalCancel");
+        const playerGenderChoices = Array.from(document.querySelectorAll(".player-gender-choice"));
+        let playerGenderModalIndex = null;
         const playerTeeSelects = Array.from({ length: MAX_PLAYERS }, (_, index) =>
             document.getElementById(`playerTee${index + 1}`)
         );
@@ -99,6 +119,680 @@
         const stablefordTableBody = document.getElementById("stablefordTableBody");
         const stablefordHeaderRow = document.getElementById("stablefordHeaderRow");
         const stablefordTotalRow = document.getElementById("stablefordTotalRow");
+        const gpsStateBadge = document.getElementById("gpsStateBadge");
+        const gpsToggleButton = document.getElementById("gpsToggleButton");
+        const gpsMessage = document.getElementById("gpsMessage");
+        const gpsDetails = document.getElementById("gpsDetails");
+        const gpsStatus = document.getElementById("gpsStatus");
+        const gpsAccuracy = document.getElementById("gpsAccuracy");
+        const gpsLatitude = document.getElementById("gpsLatitude");
+        const gpsLongitude = document.getElementById("gpsLongitude");
+        const gpsUpdatedAt = document.getElementById("gpsUpdatedAt");
+        const gpsPositionAge = document.getElementById("gpsPositionAge");
+        const gpsCourseDataStatus = document.getElementById("gpsCourseDataStatus");
+        const gpsGreenHole = document.getElementById("gpsGreenHole");
+        const gpsGreenFrontDistance = document.getElementById("gpsGreenFrontDistance");
+        const gpsGreenCenterDistance = document.getElementById("gpsGreenCenterDistance");
+        const gpsGreenBackDistance = document.getElementById("gpsGreenBackDistance");
+        const gpsObstacleInfo = document.getElementById("gpsObstacleInfo");
+        const manualEntryToolbar = document.getElementById("manualEntryToolbar");
+
+
+        const GolfGPS = (() => {
+            let manifest = null;
+            let config = null;
+            let greens = new Map();
+            let loadingCourseId = "";
+
+            function radians(value) {
+                return Number(value) * Math.PI / 180;
+            }
+
+            function distanceMeters(lat1, lon1, lat2, lon2) {
+                const earthRadius = 6371000;
+                const phi1 = radians(lat1);
+                const phi2 = radians(lat2);
+                const dPhi = radians(Number(lat2) - Number(lat1));
+                const dLambda = radians(Number(lon2) - Number(lon1));
+                const a =
+                    Math.sin(dPhi / 2) ** 2 +
+                    Math.cos(phi1) * Math.cos(phi2) *
+                    Math.sin(dLambda / 2) ** 2;
+                return earthRadius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            }
+
+            async function loadManifest() {
+                if (manifest) return manifest;
+
+                const response = await fetch("data/gps/manifest.json?v=gps202", {
+                    cache: "no-store"
+                });
+                if (!response.ok) {
+                    throw new Error(`GPS manifest HTTP ${response.status}`);
+                }
+
+                manifest = await response.json();
+                return manifest;
+            }
+
+            async function loadConfig(courseId) {
+                const gpsManifest = await loadManifest();
+                const entry = gpsManifest?.courses?.find(item => item.courseId === courseId);
+                if (!entry?.file) return null;
+
+                const response = await fetch(`data/gps/${entry.file}?v=gps202`, {
+                    cache: "no-store"
+                });
+                if (!response.ok) {
+                    throw new Error(`GPS config HTTP ${response.status}`);
+                }
+
+                return response.json();
+            }
+
+            function pointFrom(value) {
+                const lat = Number(value?.lat);
+                const lon = Number(value?.lon);
+                return Number.isFinite(lat) && Number.isFinite(lon) ? { lat, lon } : null;
+            }
+
+            function holesToMap(courseConfig) {
+                const mapped = new Map();
+
+                (courseConfig?.holes || []).forEach(row => {
+                    const hole = Number(row?.hole);
+                    if (!Number.isInteger(hole) || hole < 1 || hole > 18) return;
+
+                    const center = pointFrom(row?.greenCenter);
+                    if (!center) return;
+
+                    mapped.set(hole, {
+                        front: pointFrom(row?.greenFront),
+                        center,
+                        back: pointFrom(row?.greenBack)
+                    });
+                });
+
+                return mapped;
+            }
+
+            async function loadCourse(courseId) {
+                loadingCourseId = courseId;
+                config = null;
+                greens = new Map();
+
+                if (!courseId) {
+                    return { supported: false, count: 0 };
+                }
+
+                const courseConfig = await loadConfig(courseId);
+
+                if (loadingCourseId !== courseId) {
+                    return { supported: false, count: 0 };
+                }
+
+                if (!courseConfig) {
+                    return { supported: false, count: 0 };
+                }
+
+                config = courseConfig;
+                greens = holesToMap(courseConfig);
+
+                return {
+                    supported: greens.size > 0,
+                    count: greens.size,
+                    partial: Boolean(courseConfig.partial),
+                    unavailableHoles: Array.isArray(courseConfig.unavailableHoles)
+                        ? courseConfig.unavailableHoles.map(Number).filter(Number.isFinite)
+                        : [],
+                    validationStatus: courseConfig?.fieldValidation?.status || "unknown",
+                    source: "gps-library"
+                };
+            }
+
+            function getGreen(hole) {
+                return greens.get(Number(hole)) || null;
+            }
+
+            function getGreenCenter(hole) {
+                return getGreen(hole)?.center || null;
+            }
+
+            function getCount() {
+                return greens.size;
+            }
+
+            function getConfig() {
+                return config;
+            }
+
+            function isHoleUnavailable(hole) {
+                return Array.isArray(config?.unavailableHoles) &&
+                    config.unavailableHoles.map(Number).includes(Number(hole));
+            }
+
+            return {
+                loadCourse,
+                getGreen,
+                getGreenCenter,
+                getCount,
+                getConfig,
+                isHoleUnavailable,
+                distanceMeters
+            };
+        })();
+
+        const GPS = (() => {
+            let watchId = null;
+            let refreshTimer = null;
+            let ageTimer = null;
+            let latestPosition = null;
+            let positionHandler = null;
+            let errorHandler = null;
+            let staleHandler = null;
+            let sessionStartedAt = 0;
+            let latestTimestamp = 0;
+
+            function isAvailable() {
+                return "geolocation" in navigator;
+            }
+
+            function isActive() {
+                return watchId !== null || refreshTimer !== null;
+            }
+
+            function getPosition() {
+                return latestPosition;
+            }
+
+            function getAccuracy() {
+                return latestPosition?.coords?.accuracy ?? null;
+            }
+
+            function watchOptions() {
+                return {
+                    enableHighAccuracy: true,
+                    maximumAge: 0,
+                    timeout: 60000
+                };
+            }
+
+            function refreshOptions() {
+                return {
+                    enableHighAccuracy: true,
+                    maximumAge: 0,
+                    timeout: 30000
+                };
+            }
+
+            function positionTimestamp(position) {
+                const timestamp = Number(position?.timestamp);
+                return Number.isFinite(timestamp) && timestamp > 0 ? timestamp : Date.now();
+            }
+
+            function acceptPosition(position) {
+                const timestamp = positionTimestamp(position);
+                const tooOldForSession = timestamp < sessionStartedAt - 2000;
+                const duplicateMeasurement = latestTimestamp > 0 && timestamp <= latestTimestamp;
+
+                // watchPosition() ja getCurrentPosition() voivat palauttaa saman
+                // mittauksen samalla aikaleimalla. Tällainen duplikaatti ohitetaan
+                // hiljaa, koska se ei ole käyttäjän kannalta "vanha sijainti".
+                if (duplicateMeasurement && !tooOldForSession) {
+                    return;
+                }
+
+                if (tooOldForSession) {
+                    staleHandler?.(position, {
+                        tooOldForSession: true,
+                        duplicateMeasurement,
+                        ageMs: Math.max(0, Date.now() - timestamp)
+                    });
+                    return;
+                }
+
+                latestTimestamp = timestamp;
+                latestPosition = position;
+                positionHandler?.(position);
+            }
+
+            function acceptError(error) {
+                errorHandler?.(error, Boolean(latestPosition));
+                if (error?.code === 1) stop();
+            }
+
+            function requestFreshPosition() {
+                if (!isAvailable() || !isActive() || document.hidden) return;
+
+                navigator.geolocation.getCurrentPosition(
+                    acceptPosition,
+                    error => {
+                        if (error?.code === 3 && latestPosition) return;
+                        acceptError(error);
+                    },
+                    refreshOptions()
+                );
+            }
+
+            function startWatch() {
+                if (!isAvailable() || watchId !== null) return;
+                watchId = navigator.geolocation.watchPosition(
+                    acceptPosition,
+                    acceptError,
+                    watchOptions()
+                );
+            }
+
+            function start(onPosition, onError, onStale) {
+                if (!isAvailable()) {
+                    onError({ code: 0, message: "Geolocation API ei ole käytettävissä." }, false);
+                    return false;
+                }
+                if (isActive()) return true;
+
+                positionHandler = onPosition;
+                errorHandler = onError;
+                staleHandler = onStale;
+                sessionStartedAt = Date.now();
+                latestTimestamp = 0;
+                startWatch();
+                requestFreshPosition();
+                refreshTimer = window.setInterval(requestFreshPosition, 15000);
+                ageTimer = window.setInterval(updateGpsPositionAge, 1000);
+                return true;
+            }
+
+            function restartAfterVisibilityChange() {
+                if (!isActive() || document.hidden || !isAvailable()) return;
+                sessionStartedAt = Date.now();
+                if (watchId !== null) {
+                    navigator.geolocation.clearWatch(watchId);
+                    watchId = null;
+                }
+                startWatch();
+                requestFreshPosition();
+            }
+
+            function stop() {
+                if (watchId !== null && isAvailable()) navigator.geolocation.clearWatch(watchId);
+                if (refreshTimer !== null) window.clearInterval(refreshTimer);
+                if (ageTimer !== null) window.clearInterval(ageTimer);
+                watchId = null;
+                refreshTimer = null;
+                ageTimer = null;
+                latestPosition = null;
+                positionHandler = null;
+                errorHandler = null;
+                staleHandler = null;
+                sessionStartedAt = 0;
+                latestTimestamp = 0;
+            }
+
+            return {
+                start,
+                stop,
+                restartAfterVisibilityChange,
+                getPosition,
+                getAccuracy,
+                isAvailable,
+                isActive
+            };
+        })();
+
+        function setGpsDetailsVisible(visible) {
+            if (gpsDetails) gpsDetails.hidden = !visible;
+        }
+
+        function setGpsBadge(state, text) {
+            if (!gpsStateBadge) return;
+            gpsStateBadge.className = `gps-state-badge gps-state-${state}`;
+            gpsStateBadge.textContent = text;
+        }
+
+        function resetGpsDisplay(message = "GPS ei ole käytössä. Sijaintia ei tallenneta.") {
+            setGpsDetailsVisible(false);
+            setGpsBadge("off", "GPS pois käytöstä");
+            if (gpsToggleButton) {
+                gpsToggleButton.textContent = "📍 Salli GPS";
+                gpsToggleButton.classList.remove("gps-stop-button");
+            }
+            if (gpsMessage) gpsMessage.textContent = message;
+            if (gpsStatus) gpsStatus.textContent = "Ei käytössä";
+            if (gpsAccuracy) gpsAccuracy.textContent = "—";
+            if (gpsLatitude) gpsLatitude.textContent = "—";
+            if (gpsLongitude) gpsLongitude.textContent = "—";
+            if (gpsUpdatedAt) gpsUpdatedAt.textContent = "—";
+            if (gpsPositionAge) gpsPositionAge.textContent = "—";
+        }
+
+        function formatGpsAge(ageMs) {
+            const seconds = Math.max(0, Math.floor(ageMs / 1000));
+            if (seconds < 60) return `${seconds} s`;
+            const minutes = Math.floor(seconds / 60);
+            return `${minutes} min ${seconds % 60} s`;
+        }
+
+        function updateGpsPositionAge() {
+            const position = GPS.getPosition();
+            if (!gpsPositionAge || !position) return;
+            const timestamp = Number(position.timestamp) || Date.now();
+            const ageMs = Math.max(0, Date.now() - timestamp);
+            gpsPositionAge.textContent = formatGpsAge(ageMs);
+
+            if (ageMs > 60000 && GPS.isActive()) {
+                setGpsBadge("waiting", "GPS-sijainti vanhenee");
+                if (gpsStatus) gpsStatus.textContent = "Odotetaan uutta sijaintia";
+                if (gpsMessage) gpsMessage.textContent = "Viimeisin GPS-mittaus on yli minuutin vanha. Vanhaa sijaintia ei merkitä uudeksi päivitykseksi.";
+            }
+        }
+
+        function handleStaleGpsPosition(position, details) {
+            const ageText = formatGpsAge(details?.ageMs || 0);
+            setGpsBadge("waiting", "Vanha GPS-sijainti");
+            if (gpsStatus) gpsStatus.textContent = "Odotetaan tuoretta mittausta";
+            if (gpsMessage) gpsMessage.textContent = `Safari palautti vanhan GPS-mittauksen (${ageText}). Sitä ei hyväksytty uudeksi sijainniksi.`;
+            updateGpsPositionAge();
+        }
+
+
+        function resetGreenDistanceDisplay() {
+            if (gpsGreenHole) gpsGreenHole.textContent = String(nextHole || 1);
+            if (gpsGreenFrontDistance) gpsGreenFrontDistance.textContent = "—";
+            if (gpsGreenCenterDistance) gpsGreenCenterDistance.textContent = "—";
+            if (gpsGreenBackDistance) gpsGreenBackDistance.textContent = "—";
+        }
+
+        function updateObstacleInfo() {
+            if (!gpsObstacleInfo) return;
+
+            const position = GPS.getPosition();
+            const config = GolfGPS.getConfig();
+            const currentHole = Number(nextHole || 1);
+            const green = GolfGPS.getGreenCenter(currentHole);
+
+            const obstacles = Array.isArray(config?.obstacles)
+                ? config.obstacles.filter(item =>
+                    item.type === "bunker" &&
+                    Number(item.hole) === currentHole
+                )
+                : [];
+
+            if (!position || !green || obstacles.length === 0) {
+                gpsObstacleInfo.textContent = obstacles.length
+                    ? "GPS odottaa sijaintia"
+                    : "Ei bunkkereita tällä reiällä";
+                return;
+            }
+
+            const player = {
+                lat: position.coords.latitude,
+                lon: position.coords.longitude
+            };
+
+            const lineVector = {
+                lat: Number(green.lat) - player.lat,
+                lon: Number(green.lon) - player.lon
+            };
+
+            const vectorLength = Math.sqrt(
+                lineVector.lat * lineVector.lat +
+                lineVector.lon * lineVector.lon
+            ) || 1;
+
+            const distances = obstacles.map(item => {
+                const points = Array.isArray(item.points) && item.points.length
+                    ? item.points
+                    : (item.point ? [item.point] : []);
+
+                if (!points.length) return null;
+
+                const projected = points.map(point => {
+                    const relative = {
+                        lat: Number(point.lat) - player.lat,
+                        lon: Number(point.lon) - player.lon
+                    };
+
+                    const progress =
+                        (relative.lat * lineVector.lat +
+                         relative.lon * lineVector.lon) / vectorLength;
+
+                    return {
+                        point,
+                        progress,
+                        distance: GolfGPS.distanceMeters(
+                            player.lat,
+                            player.lon,
+                            point.lat,
+                            point.lon
+                        )
+                    };
+                });
+
+                const onCoursePoints = projected.sort((a, b) =>
+                    a.progress - b.progress
+                );
+
+                const frontPoint = onCoursePoints[0];
+                const backPoint = onCoursePoints[onCoursePoints.length - 1];
+
+                return {
+                    distance: frontPoint.distance,
+                    front: Math.round(frontPoint.distance),
+                    back: Math.round(backPoint.distance)
+                };
+            }).filter(Boolean).sort((a, b) => a.distance - b.distance);
+
+            const nearest = distances.slice(0, 2);
+
+            gpsObstacleInfo.innerHTML = nearest.length
+                ? nearest.map((item, index) =>
+                    `${index + 1}. bunkkeri<br>` +
+                    `Alkaa: <strong>${item.front} m</strong><br>` +
+                    `Loppuu: <strong>${item.back} m</strong>`
+                  ).join("<br><br>")
+                : "Ei bunkkereita";
+        }
+
+        function updateGreenCenterDistance() {
+            if (gpsGreenHole) gpsGreenHole.textContent = String(nextHole || 1);
+
+            const position = GPS.getPosition();
+            const green = GolfGPS.getGreen(nextHole);
+            const unavailable = GolfGPS.isHoleUnavailable(nextHole);
+            const targets = [
+                [gpsGreenFrontDistance, green?.front],
+                [gpsGreenCenterDistance, green?.center],
+                [gpsGreenBackDistance, green?.back]
+            ];
+
+            const accuracy = Number(position?.coords?.accuracy);
+            const accuracyReady =
+                Number.isFinite(accuracy) &&
+                accuracy <= GPS_DISTANCE_ACCURACY_LIMIT_METERS;
+
+            if (position && !accuracyReady) {
+                targets.forEach(([element]) => {
+                    if (element) element.textContent = "—";
+                });
+                return;
+            }
+
+            targets.forEach(([element, point]) => {
+                if (!element) return;
+                if (!position || !point) {
+                    element.textContent = unavailable ? "ei dataa" : "—";
+                    return;
+                }
+
+                const distance = GolfGPS.distanceMeters(
+                    position.coords.latitude,
+                    position.coords.longitude,
+                    point.lat,
+                    point.lon
+                );
+                element.textContent = Number.isFinite(distance)
+                    ? `${Math.round(distance)} m`
+                    : "—";
+            });
+        }
+
+        async function loadSelectedCourseGpsData(forceRefresh = false) {
+            resetGreenDistanceDisplay();
+
+            if (!gpsCourseDataStatus) return;
+
+            if (!selectedCourseId) {
+                gpsCourseDataStatus.textContent = "Valitse kenttä";
+                return;
+            }
+
+            gpsCourseDataStatus.textContent = "Haetaan…";
+
+            try {
+                const result = await GolfGPS.loadCourse(selectedCourseId, forceRefresh);
+
+                if (!result.supported) {
+                    gpsCourseDataStatus.textContent = "Ei GPS-dataa";
+                    return;
+                }
+
+                if (result.count === 18) {
+                    gpsCourseDataStatus.textContent = "18/18 greeniä ✓";
+                } else if (result.count > 0 && result.partial) {
+                    const unavailable = result.unavailableHoles?.length
+                        ? ` · reiät ${result.unavailableHoles.join(", ")} odottavat päivitystä`
+                        : "";
+                    gpsCourseDataStatus.textContent =
+                        `${result.count}/18 testigreeniä ✓${unavailable}`;
+                } else if (result.count > 0) {
+                    gpsCourseDataStatus.textContent = `${result.count}/18 greeniä`;
+                } else {
+                    gpsCourseDataStatus.textContent = "GPS-kenttädata ei ole vielä valmis";
+                }
+
+                updateGreenCenterDistance();
+            updateObstacleInfo();
+            } catch (error) {
+                console.error("GPS-kenttädatan lataus epäonnistui:", error);
+                gpsCourseDataStatus.textContent = "Kenttädatan haku epäonnistui";
+            }
+        }
+
+        function handleGpsPosition(position) {
+            const { latitude, longitude, accuracy } = position.coords;
+            const measurementTime = new Date(Number(position.timestamp) || Date.now());
+            const accuracyReady =
+                Number.isFinite(accuracy) &&
+                accuracy <= GPS_DISTANCE_ACCURACY_LIMIT_METERS;
+
+            if (accuracyReady) {
+                setGpsBadge("on", "GPS käytössä");
+                if (gpsStatus) gpsStatus.textContent = "GPS aktiivinen";
+                if (gpsMessage) {
+                    gpsMessage.textContent =
+                        "GPS-sijainti on riittävän tarkka. Front / Center / Back -etäisyydet ovat käytössä.";
+                }
+            } else {
+                setGpsBadge("waiting", "GPS tarkentaa sijaintia");
+                if (gpsStatus) gpsStatus.textContent = "Tarkennetaan sijaintia";
+                if (gpsMessage) {
+                    gpsMessage.textContent =
+                        `Odotetaan tarkkaa GPS-sijaintia… Etäisyydet näytetään, kun tarkkuus on ±${GPS_DISTANCE_ACCURACY_LIMIT_METERS} m tai parempi.`;
+                }
+            }
+
+            if (gpsToggleButton) {
+                gpsToggleButton.textContent = "Poista GPS käytöstä";
+                gpsToggleButton.classList.add("gps-stop-button");
+            }
+            if (gpsAccuracy) gpsAccuracy.textContent = Number.isFinite(accuracy) ? `±${Math.round(accuracy)} m` : "—";
+            if (gpsLatitude) gpsLatitude.textContent = Number(latitude).toFixed(6);
+            if (gpsLongitude) gpsLongitude.textContent = Number(longitude).toFixed(6);
+            if (gpsUpdatedAt) {
+                gpsUpdatedAt.textContent = measurementTime.toLocaleTimeString("fi-FI", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit"
+                });
+            }
+            updateGpsPositionAge();
+            updateGreenCenterDistance();
+            updateObstacleInfo();
+        }
+
+        function getGpsErrorMessage(error) {
+            if (!GPS.isAvailable()) {
+                return "Tämä selain tai laite ei tue GPS-sijaintia.";
+            }
+
+            switch (error?.code) {
+                case 1:
+                    return "Sijaintilupaa ei annettu. Salli sijainti selaimen asetuksista ja yritä uudelleen.";
+                case 2:
+                    return "GPS-sijaintia ei saatu. Tarkista laitteen sijaintipalvelut ja näkyvyys taivaalle.";
+                case 3:
+                    return "GPS-sijainnin haku aikakatkaistiin. Yritä uudelleen.";
+                default:
+                    return error?.message || "GPS:n käynnistäminen epäonnistui.";
+            }
+        }
+
+        function handleGpsError(error, hasPreviousPosition = false) {
+            const permissionDenied = error?.code === 1;
+
+            if (error?.code === 3 && hasPreviousPosition) {
+                setGpsBadge("waiting", "GPS odottaa päivitystä");
+                if (gpsStatus) gpsStatus.textContent = "Viimeisin sijainti käytössä";
+                if (gpsMessage) gpsMessage.textContent = "Uutta GPS-paikannusta odotetaan. Viimeisin onnistunut sijainti säilyy näkyvissä.";
+                return;
+            }
+            setGpsBadge("error", permissionDenied ? "GPS-lupa estetty" : "GPS-virhe");
+            if (gpsStatus) gpsStatus.textContent = permissionDenied ? "Lupa estetty" : "Sijaintia ei saatu";
+            if (gpsMessage) gpsMessage.textContent = getGpsErrorMessage(error);
+            if (gpsToggleButton) {
+                if (permissionDenied) {
+                    gpsToggleButton.textContent = "📍 Yritä GPS:ää uudelleen";
+                    gpsToggleButton.classList.remove("gps-stop-button");
+                } else if (GPS.isActive()) {
+                    gpsToggleButton.textContent = "Poista GPS käytöstä";
+                    gpsToggleButton.classList.add("gps-stop-button");
+                } else {
+                    gpsToggleButton.textContent = "📍 Yritä GPS:ää uudelleen";
+                    gpsToggleButton.classList.remove("gps-stop-button");
+                }
+            }
+        }
+
+        function startGps() {
+            setGpsDetailsVisible(true);
+            setGpsBadge("loading", "Haetaan sijaintia…");
+            if (gpsStatus) gpsStatus.textContent = "Haetaan sijaintia";
+            if (gpsMessage) gpsMessage.textContent = "Hyväksy selaimen sijaintipyyntö. Ensimmäinen tarkka sijainti voi kestää hetken.";
+            if (gpsToggleButton) {
+                gpsToggleButton.textContent = "Poista GPS käytöstä";
+                gpsToggleButton.classList.add("gps-stop-button");
+            }
+            GPS.start(handleGpsPosition, handleGpsError, handleStaleGpsPosition);
+        }
+
+        function stopGps(message = "GPS ei ole käytössä. Sijaintia ei tallenneta.") {
+            GPS.stop();
+            resetGpsDisplay(message);
+            resetGreenDistanceDisplay();
+            if (gpsObstacleInfo) {
+                gpsObstacleInfo.textContent = "GPS ei ole käytössä";
+            }
+        }
+
+        function toggleGps() {
+            if (GPS.isActive()) {
+                stopGps();
+            } else {
+                startGps();
+            }
+        }
+
+        window.toggleGps = toggleGps;
 
         function keepStartHoleInputVisible() {
             if (!startHoleInput) return;
@@ -135,18 +829,32 @@
         }
 
         async function loadCourseData() {
-            courseDataStatus.textContent = "Ladataan kenttädataa…";
+            courseDataStatus.textContent = "Ladataan kenttäkirjastoa…";
 
             try {
-                const response = await fetch("data/courses_2026-08-03.json", {
-                    cache: "no-store"
-                });
+                let data = [];
 
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
+                try {
+                    const manifestResponse = await fetch("data/courses/manifest.json", { cache: "no-store" });
+                    if (!manifestResponse.ok) throw new Error(`Manifest HTTP ${manifestResponse.status}`);
+                    const manifest = await manifestResponse.json();
+                    const courseFiles = Array.isArray(manifest?.courses) ? manifest.courses : [];
+                    if (courseFiles.length === 0) throw new Error("Kenttämanifesti on tyhjä.");
+
+                    const libraries = await Promise.all(courseFiles.map(async entry => {
+                        const response = await fetch(`data/courses/${entry.file}`, { cache: "no-store" });
+                        if (!response.ok) throw new Error(`${entry.file}: HTTP ${response.status}`);
+                        const rows = await response.json();
+                        if (!Array.isArray(rows)) throw new Error(`${entry.file}: virheellinen kenttädata`);
+                        return rows;
+                    }));
+                    data = libraries.flat();
+                } catch (libraryError) {
+                    console.warn("Kenttäkirjaston lataus epäonnistui, käytetään yhdistettyä varatiedostoa:", libraryError);
+                    const fallbackResponse = await fetch("data/courses_2026-08-07.json", { cache: "no-store" });
+                    if (!fallbackResponse.ok) throw new Error(`Fallback HTTP ${fallbackResponse.status}`);
+                    data = await fallbackResponse.json();
                 }
-
-                const data = await response.json();
 
                 if (!Array.isArray(data) || data.length === 0) {
                     throw new Error("Kenttädata on tyhjä.");
@@ -311,25 +1019,22 @@
             return value.length <= 2 ? value : value.slice(0, 2);
         }
 
-        function getAvailablePlayerTees() {
-            const combinations = new Map();
+        function getAvailablePlayerTees(gender) {
+            const tees = new Map();
 
             getRowsForSelectedCourse().forEach(row => {
-                if (!row.gender || !row.tee) return;
-                const value = encodePlayerTee(row.gender, row.tee);
-                if (!combinations.has(value)) {
-                    combinations.set(value, {
-                        value,
-                        gender: row.gender,
+                if (!row.gender || !row.tee || row.gender !== gender) return;
+                if (!tees.has(row.tee)) {
+                    tees.set(row.tee, {
+                        value: row.tee,
                         tee: row.tee,
-                        label: `${getShortTeeLabel(row.tee)} · ${row.gender === "Miehet" ? "M" : row.gender === "Naiset" ? "N" : row.gender}`
+                        label: getShortTeeLabel(row.tee)
                     });
                 }
             });
 
-            return [...combinations.values()].sort((a, b) =>
-                a.tee.localeCompare(b.tee, "fi", { numeric: true }) ||
-                a.gender.localeCompare(b.gender, "fi")
+            return [...tees.values()].sort((a, b) =>
+                a.tee.localeCompare(b.tee, "fi", { numeric: true })
             );
         }
 
@@ -349,6 +1054,75 @@
             teeSelect.value = selectedTee;
         }
 
+
+        function updatePlayerGenderIndicators() {
+            playerGenderMarks.forEach((button, index) => {
+                if (!button) return;
+                const isFemale = (playerGenders[index] || "Miehet") === "Naiset";
+                button.textContent = isFemale ? "· N" : "";
+                button.classList.toggle("is-female", isFemale);
+                button.classList.toggle("is-male", !isFemale);
+                button.setAttribute(
+                    "aria-label",
+                    `${document.getElementById(`name${index + 1}`)?.value.trim() || `P${index + 1}`}: valitse M tai N`
+                );
+            });
+        }
+
+        function openPlayerGenderModal(index) {
+            if (!playerGenderModal || index < 0 || index >= MAX_PLAYERS) return;
+            playerGenderModalIndex = index;
+            const name = document.getElementById(`name${index + 1}`)?.value.trim() || `P${index + 1}`;
+            if (playerGenderModalPlayer) playerGenderModalPlayer.textContent = name;
+            playerGenderChoices.forEach(button => {
+                const selected = button.dataset.gender === (playerGenders[index] || "Miehet");
+                button.classList.toggle("primary-button", selected);
+                button.setAttribute("aria-pressed", selected ? "true" : "false");
+            });
+            playerGenderModal.classList.add("show");
+        }
+
+        function closePlayerGenderModal() {
+            if (!playerGenderModal) return;
+            playerGenderModal.classList.remove("show");
+            playerGenderModalIndex = null;
+        }
+
+        function setPlayerGenderFromPopup(gender) {
+            const index = playerGenderModalIndex;
+            if (index === null || index < 0 || index >= MAX_PLAYERS) return;
+
+            const normalizedGender = gender === "Naiset" ? "Naiset" : "Miehet";
+            const previousTee =
+                decodePlayerTee(playerTees[index]).tee ||
+                playerTeeSelects[index]?.value ||
+                "";
+
+            playerGenders[index] = normalizedGender;
+            if (playerGenderSelects[index]) playerGenderSelects[index].value = normalizedGender;
+            playerTees[index] = previousTee
+                ? encodePlayerTee(normalizedGender, previousTee)
+                : "";
+
+            populatePlayerTeeOptions();
+
+            if (index === 0 || !playerTees[0]) {
+                applyPrimaryPlayerTeeToScorecard();
+                buildScoreTable();
+                setPlayerCount(playerCount);
+                calculateScores();
+                updateRoundLayout();
+                updateSelectedCourseInfo();
+            }
+
+            updatePlayerGenderIndicators();
+            updatePlayerSettingNames();
+            updateStablefordPlayerNames();
+            updatePlayerCourseHandicapsAndStrokeMarkers();
+            saveState();
+            closePlayerGenderModal();
+        }
+
         function updatePlayerSettingNames() {
             for (let player = 1; player <= MAX_PLAYERS; player++) {
                 const nameInput = document.getElementById(`name${player}`);
@@ -359,21 +1133,29 @@
                 }
 
                 if (scorecardPlayerNames[player - 1]) {
-                    scorecardPlayerNames[player - 1].textContent = name;
+                    const femaleMark = (playerGenders[player - 1] || "Miehet") === "Naiset" ? " · N" : "";
+                    scorecardPlayerNames[player - 1].textContent = `${name}${femaleMark}`;
                 }
             }
         }
 
         function resetPlayerDetailsAfterNameChange(playerIndex) {
             const hcpInput = playerHcpInputs[playerIndex];
+            const genderSelect = playerGenderSelects[playerIndex];
             const teeSelect = playerTeeSelects[playerIndex];
 
             playerHandicaps[playerIndex] = "";
+            playerGenders[playerIndex] = "Miehet";
             playerTees[playerIndex] = "";
 
             if (hcpInput) hcpInput.value = "";
+            if (genderSelect) genderSelect.value = "Miehet";
             if (teeSelect) teeSelect.value = "";
 
+            populatePlayerTeeOptions();
+            updatePlayerGenderIndicators();
+            playerTees[playerIndex] = "";
+            if (teeSelect) teeSelect.value = "";
             updatePlayerTeeSelectColors();
             updatePlayerCourseHandicapsAndStrokeMarkers();
             saveState();
@@ -393,7 +1175,7 @@
         }
 
         function updatePlayerTeeSelectColors() {
-            playerTeeSelects.forEach((select, index) => {
+        playerTeeSelects.forEach((select, index) => {
                 if (!select) return;
 
                 const { tee } = decodePlayerTee(playerTees[index]);
@@ -410,36 +1192,41 @@
         }
 
         function populatePlayerTeeOptions() {
-            const teeOptions = getAvailablePlayerTees();
-            const validValues = teeOptions.map(option => option.value);
-            const defaultValue = encodePlayerTee(selectedGender, selectedTee);
-
             playerTeeSelects.forEach((select, index) => {
                 if (!select) return;
 
-                let previous = playerTees[index] || select.value || defaultValue;
+                const gender = playerGenders[index] || "Miehet";
+                playerGenders[index] = gender;
+                if (playerGenderSelects[index]) {
+                    playerGenderSelects[index].value = gender;
+                }
 
-                // Vanhan version pelkkä tiin nimi muunnetaan yhdistelmäksi.
-                if (previous && !String(previous).includes("|||")) {
-                    const legacyMatch = teeOptions.find(option => option.tee === previous);
-                    previous = legacyMatch?.value || "";
+                const teeOptions = getAvailablePlayerTees(gender);
+                const validTees = teeOptions.map(option => option.tee);
+                const stored = decodePlayerTee(playerTees[index] || "");
+                let previousTee = stored.tee || select.value || "";
+
+                // Vanhan version valinta (gender|||tee) säilytetään migraatiossa.
+                if (select.value && String(select.value).includes("|||")) {
+                    previousTee = decodePlayerTee(select.value).tee;
                 }
 
                 select.innerHTML = '<option value="">Valitse tii</option>';
 
                 teeOptions.forEach(teeOption => {
                     const option = document.createElement("option");
-                    option.value = teeOption.value;
+                    option.value = teeOption.tee;
                     option.textContent = teeOption.label;
                     select.appendChild(option);
                 });
 
-                const nextValue = validValues.includes(previous)
-                    ? previous
-                    : (validValues.includes(defaultValue) ? defaultValue : (validValues[0] || ""));
+                const defaultTee = validTees.includes(selectedTee) ? selectedTee : "";
+                const nextTee = validTees.includes(previousTee)
+                    ? previousTee
+                    : (defaultTee || validTees[0] || "");
 
-                playerTees[index] = nextValue;
-                select.value = nextValue;
+                playerTees[index] = nextTee ? encodePlayerTee(gender, nextTee) : "";
+                select.value = nextTee;
             });
 
             applyPrimaryPlayerTeeToScorecard();
@@ -576,15 +1363,24 @@
 
         function syncPlayerRoundSettingsFromInputs() {
             playerHandicaps = playerHcpInputs.map(input => input?.value.trim() || "");
-            playerTees = playerTeeSelects.map(select => select?.value || "");
+            playerGenders = playerGenderSelects.map(select => select?.value || "Miehet");
+            playerTees = playerTeeSelects.map((select, index) => {
+                const tee = select?.value || "";
+                const gender = playerGenders[index] || "Miehet";
+                return tee ? encodePlayerTee(gender, tee) : "";
+            });
         }
 
         function restorePlayerRoundSettings() {
             playerHcpInputs.forEach((input, index) => {
                 if (input) input.value = playerHandicaps[index] || "";
             });
+            playerGenderSelects.forEach((select, index) => {
+                if (select) select.value = playerGenders[index] || "Miehet";
+            });
             populatePlayerTeeOptions();
             updatePlayerSettingNames();
+            updatePlayerGenderIndicators();
             updatePlayerCourseHandicapsAndStrokeMarkers();
         }
 
@@ -634,11 +1430,74 @@
                 input.addEventListener("click", () => selectScoreInput(input));
 
                 input.addEventListener("input", () => {
+                    const editedHole = Number(input.dataset.hole);
+                    const wasActiveHole = editedHole === nextHole;
+                    const playerClass = [...input.classList]
+                        .find(className => /^p[1-4]$/.test(className));
+                    const editedPlayer = playerClass
+                        ? Number(playerClass.slice(1))
+                        : 1;
+
                     normalizeManualScoreInput(input);
                     calculateScores();
+
+                    const acceptedValue = normalizeScoreValue(input.value);
+                    let nextPlayerInput = null;
+                    let nextHoleFirstPlayerInput = null;
+
+                    if (acceptedValue !== "" && editedPlayer < playerCount) {
+                        nextPlayerInput = document.querySelector(
+                            `.p${editedPlayer + 1}[data-hole="${editedHole}"]`
+                        );
+                    }
+
+                    if (wasActiveHole) {
+                        const holeComplete = Array.from(
+                            { length: playerCount },
+                            (_, index) => document.querySelector(
+                                `.p${index + 1}[data-hole="${editedHole}"]`
+                            )
+                        ).every(scoreInput => normalizeScoreValue(scoreInput?.value) !== "");
+
+                        if (holeComplete) {
+                            if (announceStandings) {
+                                const standingsMessage = buildStandingsMessage();
+                                if (standingsMessage) {
+                                    window.setTimeout(() => {
+                                        speakMessage(standingsMessage);
+                                    }, 120);
+                                }
+                            }
+
+                            nextHole = findNextIncompleteHole();
+                            roundSetupConfirmed = true;
+                            updateNextHole();
+                            updateRoundCompleteState();
+
+                            const nextHoleIsIncomplete = Array.from(
+                                { length: playerCount },
+                                (_, index) => document.querySelector(
+                                    `.p${index + 1}[data-hole="${nextHole}"]`
+                                )
+                            ).some(scoreInput => normalizeScoreValue(scoreInput?.value) === "");
+
+                            if (nextHoleIsIncomplete) {
+                                nextHoleFirstPlayerInput = document.querySelector(
+                                    `.p1[data-hole="${nextHole}"]`
+                                );
+                            }
+                        }
+                    }
+
                     saveState();
                     updateRoundLayout();
                     checkFrontNineCompletion();
+
+                    const focusTarget = nextPlayerInput || nextHoleFirstPlayerInput;
+                    if (focusTarget) {
+                        focusTarget.focus();
+                        focusTarget.select();
+                    }
                 });
             });
         }
@@ -718,6 +1577,39 @@
             saveState();
         }
 
+        function updateManualEntryToolbarPosition() {
+            if (!window.visualViewport) {
+                document.documentElement.style.setProperty(
+                    "--manual-toolbar-keyboard-offset",
+                    "0px"
+                );
+                return;
+            }
+
+            const viewport = window.visualViewport;
+            const keyboardOffset = Math.max(
+                0,
+                window.innerHeight - viewport.height - viewport.offsetTop
+            );
+
+            document.documentElement.style.setProperty(
+                "--manual-toolbar-keyboard-offset",
+                `${keyboardOffset}px`
+            );
+        }
+
+
+        function showManualEntryToolbar() {
+            document.body.classList.add("manual-entry-active");
+            updateManualEntryToolbarPosition();
+        }
+
+
+        function hideManualEntryToolbar() {
+            document.body.classList.remove("manual-entry-active");
+        }
+
+
         function selectScoreInput(input) {
             document.querySelectorAll(".score-input").forEach(item => {
                 item.classList.remove("selected-score");
@@ -725,6 +1617,7 @@
 
             selectedScoreInput = input;
             selectedScoreInput.classList.add("selected-score");
+            showManualEntryToolbar();
         }
 
         function setDashForSelectedScore() {
@@ -735,15 +1628,63 @@
                 return;
             }
 
-            selectedScoreInput.value = "-";
-            calculateScores();
-            saveState();
-            checkFrontNineCompletion();
-
-            const hole = selectedScoreInput.dataset.hole;
-            const playerClass = [...selectedScoreInput.classList]
+            const editedInput = selectedScoreInput;
+            const hole = Number(editedInput.dataset.hole);
+            const wasActiveHole = hole === nextHole;
+            const playerClass = [...editedInput.classList]
                 .find(className => /^p[1-4]$/.test(className));
             const player = playerClass ? Number(playerClass.slice(1)) : 1;
+
+            editedInput.value = "-";
+            calculateScores();
+
+            let nextPlayerInput = null;
+            let nextHoleFirstPlayerInput = null;
+            if (player < playerCount) {
+                nextPlayerInput = document.querySelector(
+                    `.p${player + 1}[data-hole="${hole}"]`
+                );
+            }
+
+            if (wasActiveHole) {
+                const holeComplete = Array.from(
+                    { length: playerCount },
+                    (_, index) => document.querySelector(
+                        `.p${index + 1}[data-hole="${hole}"]`
+                    )
+                ).every(scoreInput => normalizeScoreValue(scoreInput?.value) !== "");
+
+                if (holeComplete) {
+                    nextHole = findNextIncompleteHole();
+                    roundSetupConfirmed = true;
+                    updateNextHole();
+                    updateRoundCompleteState();
+
+                    const nextHoleIsIncomplete = Array.from(
+                        { length: playerCount },
+                        (_, index) => document.querySelector(
+                            `.p${index + 1}[data-hole="${nextHole}"]`
+                        )
+                    ).some(scoreInput => normalizeScoreValue(scoreInput?.value) === "");
+
+                    if (nextHoleIsIncomplete) {
+                        nextHoleFirstPlayerInput = document.querySelector(
+                            `.p1[data-hole="${nextHole}"]`
+                        );
+                    }
+                }
+            }
+
+            saveState();
+            updateRoundLayout();
+            checkFrontNineCompletion();
+
+            const focusTarget = nextPlayerInput || nextHoleFirstPlayerInput;
+            if (focusTarget) {
+                focusTarget.focus();
+                focusTarget.select();
+            }
+
             const playerName =
                 document.getElementById(`name${player}`).value.trim() ||
                 `P${player}`;
@@ -808,7 +1749,7 @@
 
         function getPlayedHoleOrder() {
             return Array.from(
-                { length: 18 },
+                { length: roundHoleCount },
                 (_, index) => ((startHole - 1 + index) % 18) + 1
             );
         }
@@ -1852,7 +2793,91 @@
             return { hole, addedScores };
         }
 
+
+        function parseClearHoleCommand(spokenText) {
+            const normalized = normalizePlayerNameForVoice(spokenText);
+
+            // Hyväksytyt muodot esimerkiksi:
+            // "tyhjennä reikä 6"
+            // "tyhjenna reika kuusi"
+            // "poista reikä 6"
+            // "poista reiän 6 tulokset"
+            const isClearCommand =
+                /\btyhjenna\b/.test(normalized) ||
+                /\btyhjennä\b/.test(normalized) ||
+                /\bpoista\b/.test(normalized);
+
+            if (!isClearCommand) {
+                return null;
+            }
+
+            const holeMatch = normalized.match(
+                /(?:reika|reikä|reian|reiän)\s+(\d{1,2}|[a-zåäö]+)/
+            );
+
+            if (!holeMatch) {
+                // "poista" on myös vanha kumoa-synonyymi, joten ilman reikänumeroa
+                // tätä ei tulkita koko reiän poistoksi.
+                return null;
+            }
+
+            const hole = wordToNumber(holeMatch[1]);
+
+            if (
+                typeof hole !== "number" ||
+                hole < 1 ||
+                hole > 18
+            ) {
+                throw new Error("Reiän tulee olla yksi - kahdeksantoista.");
+            }
+
+            return { hole };
+        }
+
+        function clearHoleScores(hole) {
+            const preservedNextHole = nextHole;
+            let clearedCount = 0;
+
+            for (let player = 1; player <= playerCount; player++) {
+                const input = document.querySelector(
+                    `.p${player}[data-hole="${hole}"]`
+                );
+
+                if (!input) {
+                    continue;
+                }
+
+                if (normalizeScoreValue(input.value) !== "") {
+                    clearedCount += 1;
+                }
+
+                input.value = "";
+            }
+
+            calculateScores();
+
+            // Korjaustoiminto ei muuta kierroksen varsinaista etenemiskohtaa.
+            nextHole = preservedNextHole;
+            updateNextHole();
+            updateRoundCompleteState();
+            updateRoundLayout();
+            saveState();
+
+            return {
+                action: "hole-cleared",
+                hole,
+                clearedCount,
+                addedScores: []
+            };
+        }
+
         function parseVoiceResults(spokenText) {
+            const clearHoleCommand = parseClearHoleCommand(spokenText);
+
+            if (clearHoleCommand) {
+                return clearHoleScores(clearHoleCommand.hole);
+            }
+
             const explicitHoleResult =
                 parseExplicitHoleOrderedResults(spokenText);
 
@@ -1950,30 +2975,21 @@
 
 
         function getPlayedHoleCount() {
-            let lastPlayedHole = 0;
+            let playedHoleCount = 0;
 
-            for (let hole = 1; hole <= 18; hole++) {
-                let complete = true;
+            for (const hole of getPlayedHoleOrder()) {
+                const complete = Array.from(
+                    { length: playerCount },
+                    (_, index) => document.querySelector(
+                        `.p${index + 1}[data-hole="${hole}"]`
+                    )
+                ).every(input => normalizeScoreValue(input?.value) !== "");
 
-                for (let player = 1; player <= playerCount; player++) {
-                    const input = document.querySelector(
-                        `.p${player}[data-hole="${hole}"]`
-                    );
-
-                    if (!input || input.value === "") {
-                        complete = false;
-                        break;
-                    }
-                }
-
-                if (complete) {
-                    lastPlayedHole = hole;
-                } else {
-                    break;
-                }
+                if (!complete) break;
+                playedHoleCount += 1;
             }
 
-            return lastPlayedHole;
+            return playedHoleCount;
         }
 
         function getStandingsData() {
@@ -2226,6 +3242,7 @@
         }
 
         function startVoiceInput() {
+            hideManualEntryToolbar();
             primeSpeechSynthesis();
 
             if (roundComplete) {
@@ -2282,29 +3299,45 @@
                 }
 
                 if (successfulResult) {
-                    voiceStatus.innerHTML =
-                        `<strong>Kuulin:</strong> ${escapeHtml(heardText)}<br>` +
-                        `<strong>Reikä ${successfulResult.hole} tallennettu ✅</strong><br>` +
-                        successfulResult.addedScores.join(", ");
+                    if (successfulResult.action === "hole-cleared") {
+                        const clearedText = successfulResult.clearedCount > 0
+                            ? `Reiän ${successfulResult.hole} tulokset poistettu ✅`
+                            : `Reikä ${successfulResult.hole} oli jo tyhjä.`;
 
-                    showSavedHoleInScorecard(
-                        successfulResult.hole
-                    );
+                        voiceStatus.innerHTML =
+                            `<strong>Kuulin:</strong> ${escapeHtml(heardText)}<br>` +
+                            `<strong>${escapeHtml(clearedText)}</strong><br>` +
+                            `Kierroksen etenemiskohta säilyi reiässä ${nextHole}.`;
 
-                    pendingVoiceMessage =
-                        `Reikä ${successfulResult.hole} tallennettu`;
+                        pendingVoiceMessage =
+                            successfulResult.clearedCount > 0
+                                ? `Reiän ${successfulResult.hole} tulokset poistettu`
+                                : `Reikä ${successfulResult.hole} oli jo tyhjä`;
+                    } else {
+                        voiceStatus.innerHTML =
+                            `<strong>Kuulin:</strong> ${escapeHtml(heardText)}<br>` +
+                            `<strong>Reikä ${successfulResult.hole} tallennettu ✅</strong><br>` +
+                            successfulResult.addedScores.join(", ");
 
-                    if (announceStandings) {
-                        const standingsMessage = buildStandingsMessage();
+                        showSavedHoleInScorecard(
+                            successfulResult.hole
+                        );
 
-                        if (standingsMessage) {
-                            pendingVoiceMessage += `. ${standingsMessage}`;
+                        pendingVoiceMessage =
+                            `Reikä ${successfulResult.hole} tallennettu`;
+
+                        if (announceStandings) {
+                            const standingsMessage = buildStandingsMessage();
+
+                            if (standingsMessage) {
+                                pendingVoiceMessage += `. ${standingsMessage}`;
+                            }
                         }
+
+                        checkFrontNineCompletion();
                     }
 
-                    checkFrontNineCompletion();
-
-                    // 18. reikä ei päätä kierrosta automaattisesti.
+                    // Kierrosta ei päätetä automaattisesti.
                     // Käyttäjä päättää kierroksen Päätä kierros -painikkeella.
                 } else {
                     voiceStatus.innerHTML =
@@ -2387,6 +3420,29 @@
         function updateNextHole() {
             nextHoleElement.textContent = nextHole;
             compactNextHoleElement.textContent = nextHole;
+
+            const roundIsActive = roundSetupConfirmed && !roundComplete;
+
+            if (activeHoleLabel) {
+                activeHoleLabel.textContent = roundIsActive
+                    ? "NYT PELATAAN"
+                    : "Aloitusreikä";
+            }
+
+            if (activeHoleHelp) {
+                activeHoleHelp.textContent = roundIsActive
+                    ? "Seuraava puhekirjaus kohdistuu tähän reikään."
+                    : "Anna aloitusreikä ennen ensimmäistä kirjausta.";
+            }
+
+            if (compactHoleLabel) {
+                compactHoleLabel.textContent = roundIsActive
+                    ? "Nyt pelataan"
+                    : "Aloitusreikä";
+            }
+
+            updateGreenCenterDistance();
+            updateObstacleInfo();
         }
 
         function updateRoundLayout() {
@@ -2453,6 +3509,7 @@
                 playerCount,
                 roundSetupConfirmed,
                 startHole,
+                roundHoleCount,
                 nextHole,
                 roundComplete,
                 frontNineAnnounced,
@@ -2461,6 +3518,7 @@
                 tee: selectedTee,
                 gender: selectedGender,
                 playerHandicaps: [...playerHandicaps],
+                playerGenders: [...playerGenders],
                 playerTees: [...playerTees],
                 names: [],
                 scores: {}
@@ -2498,7 +3556,12 @@
                 playerCount = Number(state.playerCount) || 1;
                 roundSetupConfirmed = Boolean(state.roundSetupConfirmed);
                 startHole = Number(state.startHole) || 1;
+                roundHoleCount = Number(state.roundHoleCount) === 9 ? 9 : 18;
                 nextHole = Number(state.nextHole) || 1;
+
+                if (roundHoleCountInput) {
+                    roundHoleCountInput.value = String(roundHoleCount);
+                }
 
                 if (startHoleInput) {
                     startHoleInput.value = roundSetupConfirmed
@@ -2515,6 +3578,14 @@
                 playerTees = Array.from({ length: MAX_PLAYERS }, (_, index) =>
                     String(state.playerTees?.[index] ?? "")
                 );
+                playerGenders = Array.from({ length: MAX_PLAYERS }, (_, index) => {
+                    const savedGender = String(state.playerGenders?.[index] ?? "");
+                    if (savedGender === "Miehet" || savedGender === "Naiset") {
+                        return savedGender;
+                    }
+                    const legacyGender = decodePlayerTee(playerTees[index]).gender;
+                    return legacyGender === "Naiset" ? "Naiset" : "Miehet";
+                });
 
                 for (let player = 1; player <= MAX_PLAYERS; player++) {
                     const name = state.names?.[player - 1];
@@ -2659,11 +3730,15 @@
         function finishRound() {
             const playedHoles = getPlayedHoleCount();
 
-            if (playedHoles < 18) {
+            if (playedHoles < roundHoleCount) {
                 voiceStatus.textContent =
-                    "Kierros ei ole vielä valmis. Pelaa 18 reikää ennen päättämistä.";
+                    `Kierros ei ole vielä valmis. Pelaa ${roundHoleCount} reikää ennen päättämistä.`;
                 speakMessage("Kierros ei ole vielä valmis");
                 return;
+            }
+
+            if (GPS.isActive()) {
+                stopGps("GPS poistettiin käytöstä akun säästämiseksi.");
             }
 
             roundComplete = true;
@@ -2726,6 +3801,8 @@
                 date: roundDateInput.value || getTodayDateValue(),
                 gameFormat: gameFormatInput.value,
                 notes: roundNotesInput.value.trim(),
+                startHole,
+                roundHoleCount,
                 playerCount,
                 names: [],
                 scores: {},
@@ -4028,6 +5105,11 @@
         }
 
         function resetRound() {
+            playerGenders = Array(MAX_PLAYERS).fill("Miehet");
+            playerGenderSelects.forEach(select => {
+                if (select) select.value = "Miehet";
+            });
+            updatePlayerGenderIndicators();
             const confirmed = confirm(
                 "Haluatko varmasti aloittaa uuden kierroksen? Kaikki tulokset poistetaan."
             );
@@ -4047,7 +5129,9 @@
             roundSetupConfirmed = false;
             manualNineView = null;
             startHole = 1;
+            roundHoleCount = 18;
             if (startHoleInput) startHoleInput.value = "";
+            if (roundHoleCountInput) roundHoleCountInput.value = "18";
             document.querySelectorAll(".selected-score").forEach(input => {
                 input.classList.remove("selected-score");
             });
@@ -4080,6 +5164,48 @@
             });
         });
 
+        // Player gender: first tap/click focuses the name for editing.
+        // A later tap/click while the same input is already focused opens M/N.
+        playerGenderTriggers.forEach((input, index) => {
+            if (!input) return;
+
+            input.addEventListener("pointerdown", event => {
+                if (document.activeElement !== input) return;
+
+                event.preventDefault();
+                input.blur();
+                openPlayerGenderModal(index);
+            });
+        });
+
+        // For a female player the visible · N marker opens the same popup directly.
+        playerGenderMarks.forEach((button, index) => {
+            if (!button) return;
+            button.addEventListener("click", event => {
+                event.preventDefault();
+                event.stopPropagation();
+                const input = playerGenderTriggers[index];
+                if (input) input.blur();
+                openPlayerGenderModal(index);
+            });
+        });
+
+        playerGenderChoices.forEach(button => {
+            button.addEventListener("click", () => {
+                setPlayerGenderFromPopup(button.dataset.gender);
+            });
+        });
+
+        if (playerGenderModalCancel) {
+            playerGenderModalCancel.addEventListener("click", closePlayerGenderModal);
+        }
+
+        if (playerGenderModal) {
+            playerGenderModal.addEventListener("click", event => {
+                if (event.target === playerGenderModal) closePlayerGenderModal();
+            });
+        }
+
         document.querySelectorAll(".player-name").forEach(input => {
             input.dataset.previousName = input.value.trim();
 
@@ -4090,6 +5216,13 @@
                 if (genericName) {
                     input.value = "";
                     updatePlayerSettingNames();
+                } else {
+                    window.setTimeout(() => {
+                        try {
+                            const end = input.value.length;
+                            input.setSelectionRange(end, end);
+                        } catch (_) {}
+                    }, 0);
                 }
             });
 
@@ -4126,11 +5259,40 @@
             });
         });
 
+        playerGenderSelects.forEach((select, index) => {
+            if (!select) return;
+
+            select.addEventListener("change", () => {
+                const previousTee = decodePlayerTee(playerTees[index]).tee || playerTeeSelects[index]?.value || "";
+                playerGenders[index] = select.value || "Miehet";
+                playerTees[index] = previousTee
+                    ? encodePlayerTee(playerGenders[index], previousTee)
+                    : "";
+
+                populatePlayerTeeOptions();
+
+                if (index === 0 || !playerTees[0]) {
+                    applyPrimaryPlayerTeeToScorecard();
+                    buildScoreTable();
+                    setPlayerCount(playerCount);
+                    calculateScores();
+                    updateRoundLayout();
+                    updateSelectedCourseInfo();
+                }
+
+                updatePlayerCourseHandicapsAndStrokeMarkers();
+                saveState();
+            });
+        });
+
         playerTeeSelects.forEach((select, index) => {
             if (!select) return;
 
             select.addEventListener("change", () => {
-                playerTees[index] = select.value;
+                const gender = playerGenders[index] || "Miehet";
+                playerTees[index] = select.value
+                    ? encodePlayerTee(gender, select.value)
+                    : "";
                 updatePlayerTeeSelectColors();
 
                 // Tuloskortin Par/HCP-näkymä seuraa ensimmäisen aktiivisen
@@ -4154,6 +5316,7 @@
             populateGenderOptions();
             populateTeeOptions();
             refreshScoreTableForCourse();
+            loadSelectedCourseGpsData();
         });
 
         genderSelect.addEventListener("change", () => {
@@ -4204,6 +5367,18 @@
             startHoleInput.addEventListener("blur", applyStartHole);
         }
 
+
+        if (roundHoleCountInput) {
+            roundHoleCountInput.addEventListener("change", () => {
+                roundHoleCount = Number(roundHoleCountInput.value) === 9 ? 9 : 18;
+                nextHole = findNextIncompleteHole();
+                updateNextHole();
+                updateRoundCompleteState();
+                updateRoundLayout();
+                saveState();
+            });
+        }
+
         announceStandingsInput.addEventListener("change", () => {
             announceStandings = announceStandingsInput.checked;
             saveState();
@@ -4213,12 +5388,18 @@
             const updateStarted = await updateToLatestVersionIfNeeded();
             if (updateStarted) return;
 
+            resetGpsDisplay();
+            document.addEventListener("visibilitychange", () => {
+                if (!document.hidden) GPS.restartAfterVisibilityChange();
+            });
+            window.addEventListener("pagehide", () => GPS.stop(), { once: true });
             await loadCourseData();
             buildScoreTable();
             buildStablefordScorecard();
             loadState();
             restorePlayerRoundSettings();
             updateSelectedCourseInfo();
+            await loadSelectedCourseGpsData();
             updateRoundCompleteState();
             updateRoundLayout();
             prepareRoundMetadataForm();
